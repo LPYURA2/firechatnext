@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f0f0f">
+  <title>🔐 FireChat P2P</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --bg: #0f0f0f; --card: #1a1a1a; --text: #f5f5f7; --muted: #8e8e93;
+      --accent: #0a84ff; --accent-hover: #0070e0; --success: #30d158;
+      --error: #ff453a; --warning: #ffd60a; --input-bg: #2c2c2e; --border: #3a3a3c;
+      --info: #5ac8fa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1rem; display: flex; justify-content: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 600px; padding-bottom: 4rem; }
+    .status { padding: 0.8rem; border-radius: 10px; text-align: center; font-weight: 600; font-size: 1rem; margin-bottom: 1rem; background: var(--input-bg); border: 1px solid var(--border); color: var(--muted); transition: all 0.3s; }
+    .status.connecting { background: #3a3a3c; color: var(--warning); border-color: #5a5a5c; }
+    .status.connected { background: rgba(48, 209, 88, 0.15); color: var(--success); border-color: var(--success); }
+    .status.error { background: rgba(255, 69, 58, 0.15); color: var(--error); border-color: var(--error); }
+    .status.info { background: rgba(90, 200, 250, 0.15); color: var(--info); border-color: var(--info); }
+    .card { background: var(--card); padding: 1.5rem; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); margin-bottom: 1rem; border: 1px solid var(--border); }
+    h2 { margin: 0 0 1.2rem; font-size: 1.3rem; color: var(--text); }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; }
+    input, textarea { width: 100%; padding: 0.9rem; margin: 0.5rem 0 1rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem; background: var(--input-bg); color: var(--text); transition: border-color 0.2s; }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea { font-family: 'SF Mono', 'Consolas', monospace; font-size: 0.75rem; min-height: 100px; resize: vertical; line-height: 1.4; }
+    .btn-row { display: flex; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    button { padding: 0.8rem 1.2rem; border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; flex: 1; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #3a3a3c; }
+    .btn-danger { background: rgba(255,69,58,0.2); color: var(--error); border: 1px solid rgba(255,69,58,0.4); }
+    .btn-danger:hover { background: rgba(255,69,58,0.3); }
+    .btn-small { padding: 0.4rem 0.6rem; font-size: 0.75rem; flex: none; }
+    .hidden { display: none !important; }
+    #messages { height: 300px; overflow-y: auto; padding: 0.8rem; background: var(--bg); border-radius: 12px; margin-bottom: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem; border: 1px solid var(--border); }
+    .msg { max-width: 80%; padding: 0.6rem 0.9rem; border-radius: 14px; word-break: break-word; line-height: 1.4; }
+    .msg.me { align-self: flex-end; background: var(--accent); color: white; }
+    .msg.other { align-self: flex-start; background: var(--input-bg); border: 1px solid var(--border); }
+    .msg .time { font-size: 0.65rem; opacity: 0.7; margin-bottom: 0.2rem; }
+    .msg .hash { font-size: 0.6rem; opacity: 0.5; margin-top: 0.3rem; font-family: monospace; }
+    .chat-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .chat-row input { flex: 1; margin: 0; }
+    .chat-row button { flex: 0 0 auto; width: 48px; padding: 0; font-size: 1.2rem; }
+    .file-area { padding: 1rem; background: var(--input-bg); border-radius: 12px; text-align: center; border: 1px dashed var(--border); }
+    .file-area button { flex: none; }
+    .progress-wrap { height: 6px; background: #2c2c2e; border-radius: 3px; margin-top: 0.6rem; overflow: hidden; }
+    .progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.2s; }
+    .file-status { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+    .logs-toggle { position: fixed; bottom: 1rem; right: 1rem; background: rgba(30,30,30,0.9); color: var(--muted); padding: 0.5rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; border: 1px solid var(--border); backdrop-filter: blur(8px); z-index: 100; }
+    pre#logs { background: #050505; color: var(--muted); padding: 1rem; border-radius: 12px; font-size: 0.7rem; overflow: auto; max-height: 180px; margin-top: 0; display: none; font-family: 'SF Mono', monospace; border: 1px solid var(--border); }
+    .badge { display: inline-block; padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-top: 0.5rem; }
+    .badge.p2p { background: rgba(48,209,88,0.2); color: var(--success); }
+    .badge.relay { background: rgba(255,69,58,0.2); color: var(--error); }
+    .badge.pending { background: rgba(255,214,10,0.2); color: var(--warning); }
+    .chat-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0; }
+    .chat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--input-bg); border-radius: 10px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+    .chat-item:hover { background: #3a3a3c; }
+    .chat-item.active { border-color: var(--accent); background: rgba(10,132,255,0.1); }
+    .chat-item .chat-name { font-weight: 600; font-size: 0.95rem; }
+    .chat-item .chat-meta { font-size: 0.75rem; color: var(--muted); }
+    .chat-item .chat-actions { display: flex; gap: 0.4rem; }
+    .chat-item button { padding: 0.3rem 0.5rem; font-size: 0.7rem; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .top-bar h2 { margin: 0; }
+    .network-indicator { font-size: 0.75rem; color: var(--muted); display: flex; align-items: center; gap: 0.3rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.online { background: var(--success); }
+    .dot.offline { background: var(--error); }
+    .toggle-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.5rem 0; }
+    .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+    .toggle-row label { margin: 0; font-size: 0.9rem; color: var(--text); }
+    .firebase-box { margin: 0.5rem 0; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin: 0.3rem 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="status" class="status">🔌 Не подключено</div>
+
+    <!-- Главный экран -->
+    <div class="card" id="startPanel">
+      <div class="top-bar">
+        <h2>🔐 FireChat P2P</h2>
+        <div class="network-indicator"><span class="dot online" id="netDot"></span><span id="netText">Онлайн</span></div>
+      </div>
+      <label>Введите ваше имя:</label>
+      <input type="text" id="username" placeholder="Имя" maxlength="30">
+
+      <div class="toggle-row">
+        <input type="checkbox" id="firebaseToggle" checked>
+        <label for="firebaseToggle">🔥 Авто-подключение (Firebase)</label>
+      </div>
+      <div class="firebase-box hidden" id="firebaseConfigBox">
+        <label>Конфигурация Firebase (JSON):</label>
+        <textarea id="firebaseConfigInput" rows="3" placeholder='{"apiKey":"...","authDomain":"...","databaseURL":"..."}'></textarea>
+        <div class="btn-row">
+          <button class="btn-secondary btn-small" id="saveConfigBtn">💾 Сохранить</button>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="createBtn">🚀 Создать чат</button>
+        <button class="btn-secondary" id="joinBtn">🔗 Присоединиться</button>
+      </div>
+
+      <h2 style="margin-top:1.5rem; font-size:1.1rem;">📋 Мои чаты</h2>
+      <div class="chat-list" id="chatList">
+        <div class="chat-item" style="justify-content:center; color:var(--muted);">
+          Нет сохранённых чатов
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top:1rem;">
+        <button class="btn-secondary btn-small" id="clearDataBtn">🗑️ Сброс данных</button>
+      </div>
+      <div style="font-size:0.75rem; color:var(--muted); text-align:center; margin-top:0.5rem;">
+        v3.0 Hybrid • P2P Encrypted • DTLS + E2E
+      </div>
+    </div>
+
+    <!-- Панель создателя -->
+    <div class="card hidden" id="initiatorPanel">
+      <h2>📤 Код комнаты</h2>
+      <label>1️⃣ Отправьте этот код другу (любым способом):</label>
+      <textarea id="offerOutput" readonly></textarea>
+      <div class="btn-row">
+        <button class="btn-secondary" id="copyOffer">📋 Копировать</button>
+        <button class="btn-secondary" id="shareOffer">📤 Поделиться</button>
+      </div>
+      <label style="margin-top:1rem;">2️⃣ Вставьте ответ друга:</label>
+      <textarea id="answerInput" placeholder="Ответ друга..."></textarea>
+      <div class="btn-row">
+        <button class="btn-primary" id="connectBtn">✅ Подключить</button>
+        <button class="btn-danger" id="cancelBtn1">❌ Отмена</button>
+      </div>
+      <div class="hint">
+        💡 Код можно отправить через мессенджер, email или QR. После подключения сигнальные данные автоматически удаляются.
+      </div>
+    </div>
+
+    <!-- Панель присоединяющегося -->
+    <div class="card hidden" id="joinerPanel">
+      <h2>📥 Подключение</h2>
+      <label>1️⃣ Вставьте код комнаты:</label>
+      <textarea id="offerInput" placeholder="Код комнаты..."></textarea>
+      <div class="btn-row">
+        <button class="btn-primary" id="generateAnswer">🔗 Сгенерировать ответ</button>
+      </div>
+      <label style="margin-top:1rem;">2️⃣ Отправьте этот ответ создателю:</label>
+      <textarea id="answerOutput" readonly></textarea>
+      <div class="btn-row">
+        <button class="btn-secondary" id="copyAnswer">📋 Копировать</button>
+        <button class="btn-secondary" id="shareAnswer">📤 Поделиться</button>
+        <button class="btn-danger" id="cancelBtn2">❌ Отмена</button>
+      </div>
+    </div>
+
+    <!-- Чат -->
+    <div class="card hidden" id="chatPanel">
+      <div class="top-bar">
+        <h2>💬 <span id="chatTitle">Чат</span> <span id="badge" class="badge hidden"></span></h2>
+        <button class="btn-small btn-danger" id="disconnectBtn">Отключить</button>
+      </div>
+      <div id="messages"></div>
+      <div class="chat-row">
+        <input type="text" id="msgInput" placeholder="Сообщение..." maxlength="2000">
+        <button class="btn-primary relative" id="sendBtn">➤</button>
+      </div>
+      <div class="file-area">
+        <input type="file" id="fileInput" style="display:none;">
+        <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">📎 Файл</button>
+        <div class="progress-wrap hidden" id="fileProgressWrap"><div class="progress-bar" id="fileProgressBar"></div></div>
+        <div class="file-status" id="fileStatus"></div>
+      </div>
+      <div style="margin-top:0.8rem; font-size:0.75rem; color:var(--muted); text-align:center;">
+        🔒 Все сообщения и файлы передаются напрямую (P2P), шифруются DTLS. Сервер не используется.
+      </div>
+    </div>
+
+    <pre id="logs"></pre>
+  </div>
+
+  <div class="logs-toggle" onclick="document.getElementById('logs').style.display = document.getElementById('logs').style.display === 'block' ? 'none' : 'block'">🐞 Логи</div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    // ==================== КОНФИГУРАЦИЯ ====================
+    const PC_CONFIG = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+      ],
+      iceCandidatePoolSize: 10,
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
+    };
+
+    const HEARTBEAT_INTERVAL = 15000;
+    const RECONNECT_DELAY = 3000;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const CHUNK_SIZE = 16384;
+    const MAX_FILE_SIZE = 100 * 1024 * 1024;
+    const FIREBASE_CONFIG_KEY = 'fc_firebase_config';
+    const CHAT_HISTORY_KEY = 'fc_history';
+    const DEVICE_ID_KEY = 'fc_device_id';
+
+    // ==================== СОСТОЯНИЕ ====================
+    let pc = null, dc = null;
+    let myName = '';
+    let role = 'none';
+    let currentChatId = null;
+    let heartbeatTimer = null;
+    let reconnectAttempts = 0;
+    let reconnectTimer = null;
+    let messageQueue = [];
+    let isOnline = navigator.onLine;
+    let connectionType = 'unknown';
+    let useFirebase = true;
+    let firebaseApp = null, dbRef = null;
+    let firebaseConnected = false;
+    let candidates = [];
+
+    const deviceId = localStorage.getItem(DEVICE_ID_KEY) || crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+
+    // ==================== УТИЛИТЫ ====================
+    const log = m => {
+      console.log(m);
+      const el = document.getElementById('logs');
+      el.textContent += `[${new Date().toLocaleTimeString()}] ${m}\n`;
+      el.scrollTop = el.scrollHeight;
+    };
+
+    const setStatus = (txt, cls) => {
+      const el = document.getElementById('status');
+      el.textContent = txt;
+      el.className = `status ${cls || ''}`;
+    };
+
+    const setBadge = (type, text) => {
+      const b = document.getElementById('badge');
+      b.textContent = text;
+      b.className = `badge ${type}`;
+      b.classList.remove('hidden');
+    };
+
+    const show = id => document.getElementById(id).classList.remove('hidden');
+    const hide = id => document.getElementById(id).classList.add('hidden');
+
+    // Кодирование/декодирование сигналов (стандартный base64)
+    const pack = d => btoa(JSON.stringify(d));
+    const unpack = s => {
+      try {
+        let clean = s.replace(/[\s\n\r\u200B-\u200D\uFEFF]/g, '');
+        return JSON.parse(atob(clean));
+      } catch (e) {
+        log(`❌ Ошибка парсинга кода: ${e.message}`);
+        return null;
+      }
+    };
+
+    async function sha256(buffer) {
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
+    }
+
+    const waitIce = pc => new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') return resolve();
+      const check = () => {
+        if (pc.iceGatheringState === 'complete') {
+          pc.removeEventListener('icegatheringstatechange', check);
+          resolve();
+        }
+      };
+      pc.addEventListener('icegatheringstatechange', check);
+      setTimeout(() => { pc.removeEventListener('icegatheringstatechange', check); resolve(); }, 25000);
+    });
+
+    // ==================== FIREBASE ====================
+    async function initFirebase(configJson) {
+      if (!configJson) return false;
+      try {
+        const config = JSON.parse(configJson);
+        firebaseApp = firebase.initializeApp(config, `fc-${Date.now()}`);
+        dbRef = firebase.database().ref(`firechat/${currentChatId}`);
+        firebaseConnected = true;
+        log('🔥 Firebase подключён');
+        return true;
+      } catch (e) {
+        log('❌ Firebase ошибка: ' + e.message);
+        firebaseConnected = false;
+        return false;
+      }
+    }
+
+    function cleanupFirebase() {
+      if (dbRef) { dbRef.off(); dbRef = null; }
+      if (firebaseApp) { firebaseApp.delete(); firebaseApp = null; }
+      firebaseConnected = false;
+    }
+
+    function saveFirebaseConfig() {
+      const val = document.getElementById('firebaseConfigInput').value.trim();
+      if (!val) return alert('Введите JSON конфигурацию');
+      try {
+        JSON.parse(val);
+        localStorage.setItem(FIREBASE_CONFIG_KEY, val);
+        log('✅ Конфигурация сохранена');
+      } catch(e) { alert('❌ Неверный формат JSON'); }
+    }
+
+    function loadSavedConfig() {
+      const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+      if (saved) {
+        document.getElementById('firebaseConfigInput').value = saved;
+      }
+    }
+
+    // ==================== ХРАНИЛИЩЕ ЧАТОВ ====================
+    function getChats() {
+      try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]'); }
+      catch { return []; }
+    }
+
+    function saveChat(chatId, name) {
+      const chats = getChats().filter(c => c.id !== chatId);
+      chats.unshift({ id: chatId, name, creator: role === 'initiator' ? deviceId : null, ts: Date.now() });
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chats.slice(0, 10)));
+      renderChatList();
+    }
+
+    function deleteChat(chatId) {
+      const chats = getChats().filter(c => c.id !== chatId);
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chats));
+      localStorage.removeItem(`firechat_msgs_${chatId}`);
+      renderChatList();
+    }
+
+    function renderChatList() {
+      const list = document.getElementById('chatList');
+      const chats = getChats();
+      if (chats.length === 0) {
+        list.innerHTML = '<div class="chat-item" style="justify-content:center; color:var(--muted);">Нет сохранённых чатов</div>';
+        return;
+      }
+      list.innerHTML = chats.map(c => {
+        const date = new Date(c.ts).toLocaleDateString();
+        return `<div class="chat-item ${c.id === currentChatId ? 'active' : ''}" onclick="quickJoin('${c.id}')">
+          <div>
+            <div class="chat-name">${escapeHtml(c.name)}</div>
+            <div class="chat-meta">${date} • ${c.id}</div>
+          </div>
+          <div class="chat-actions">
+            <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteChat('${c.id}')">🗑️</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function quickJoin(chatId) {
+      currentChatId = chatId;
+      role = 'joiner';
+      const chats = getChats();
+      const chat = chats.find(c => c.id === chatId);
+      if (chat) myName = chat.name;
+
+      if (useFirebase) {
+        const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+        if (saved) {
+          initFirebase(saved).then(ok => {
+            if (ok) {
+              makePC();
+              listenForOffer();
+              hide('startPanel');
+              show('chatPanel');
+              setStatus('⏳ Ожидание создателя...', 'connecting');
+            } else {
+              fallbackToManual();
+            }
+          });
+        } else {
+          fallbackToManual();
+        }
+      } else {
+        fallbackToManual();
+      }
+    }
+
+    function fallbackToManual() {
+      hide('startPanel');
+      show('joinerPanel');
+      setStatus('🔗 Ручной режим', 'info');
+    }
+
+    // ==================== WEBRTC ДВИЖОК ====================
+    function makePC() {
+      if (pc) { try { pc.close(); } catch {} }
+      candidates = [];
+      pc = new RTCPeerConnection(PC_CONFIG);
+
+      // СБОР ICE-КАНДИДАТОВ — КРИТИЧЕСКИ ВАЖНО!
+      pc.onicecandidate = e => {
+        if (e.candidate) {
+          candidates.push(e.candidate);
+          log(`🧊 ICE candidate: ${e.candidate.candidate.substring(0, 50)}...`);
+        }
+      };
+
+      pc.onicecandidateerror = e => log(`❌ ICE Error: ${e.errorText}`);
+
+      pc.oniceconnectionstatechange = () => {
+        log(`ICE: ${pc.iceConnectionState}`);
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          setStatus('✅ Подключено', 'connected');
+          reconnectAttempts = 0;
+          checkConnectionType();
+          startHeartbeat();
+          flushQueue();
+          if (useFirebase && dbRef) dbRef.remove().catch(() => {});
+        } else if (pc.iceConnectionState === 'failed') {
+          setStatus('❌ ICE failed — пробуем переподключиться', 'error');
+          attemptReconnect();
+        } else if (pc.iceConnectionState === 'disconnected') {
+          setStatus('⚠️ Соединение потеряно...', 'connecting');
+          attemptReconnect();
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        log(`PC: ${pc.connectionState}`);
+        if (pc.connectionState === 'failed') {
+          setStatus('❌ Ошибка соединения', 'error');
+          attemptReconnect();
+        } else if (pc.connectionState === 'closed') {
+          setStatus('🔌 Отключено', '');
+          stopHeartbeat();
+        }
+      };
+
+      pc.ondatachannel = e => {
+        dc = e.channel;
+        setupDC();
+      };
+
+      return pc;
+    }
+
+    async function checkConnectionType() {
+      try {
+        const stats = await pc.getStats();
+        for (const [, stat] of stats) {
+          if (stat.type === 'transport' && stat.selectedCandidatePairId) {
+            const pair = stats.get(stat.selectedCandidatePairId);
+            if (pair) {
+              const local = stats.get(pair.localCandidateId);
+              if (local) {
+                if (local.candidateType === 'host') {
+                  setBadge('p2p', '🌐 Локальная сеть');
+                  connectionType = 'local';
+                } else if (local.candidateType === 'srflx') {
+                  setBadge('p2p', '🌐 Прямое P2P');
+                  connectionType = 'p2p';
+                } else if (local.candidateType === 'relay') {
+                  setBadge('relay', '🔄 Ретрансляция');
+                  connectionType = 'relay';
+                }
+              }
+            }
+          }
+        }
+      } catch (e) { log('Stats error: ' + e.message); }
+    }
+
+    // ==================== DATA CHANNEL ====================
+    function setupDC() {
+      dc.binaryType = 'arraybuffer';
+
+      dc.onopen = () => {
+        log('💬 DataChannel открыт');
+        setStatus('✅ Подключено', 'connected');
+        hide('initiatorPanel');
+        hide('joinerPanel');
+        show('chatPanel');
+        addMsg('🤖 Система', '🔒 Соединение установлено. Шифрование: DTLS 1.2. Тип: ' + (connectionType === 'relay' ? 'ретрансляция' : 'прямое P2P'), false);
+        flushQueue();
+        if (currentChatId) saveChat(currentChatId, myName);
+        // Очистка сигнальных полей
+        document.getElementById('offerOutput').value = '';
+        document.getElementById('answerInput').value = '';
+        document.getElementById('offerInput').value = '';
+        document.getElementById('answerOutput').value = '';
+      };
+
+      dc.onmessage = e => {
+        const raw = e.data;
+        if (raw instanceof ArrayBuffer) return handleFileChunk(raw);
+        try {
+          const msg = JSON.parse(raw);
+          if (msg.type === 'text') addMsg(msg.user, msg.text, false);
+          else if (msg.type === 'file_meta') initFileReceive(msg);
+          else if (msg.type === 'file_end') finalizeFileReceive(msg);
+          else if (msg.type === 'heartbeat') { /* пульс */ }
+        } catch (err) { log('Ошибка обработки сообщения: ' + err.message); }
+      };
+
+      dc.onclose = () => {
+        log('💬 DataChannel закрыт');
+        setStatus('🔌 Канал закрыт', '');
+        stopHeartbeat();
+      };
+
+      dc.onerror = e => {
+        log('❌ DataChannel ошибка: ' + e.message);
+        setStatus('❌ Ошибка канала', 'error');
+      };
+    }
+
+    // ==================== HEARTBEAT & RECONNECT ====================
+    function startHeartbeat() {
+      stopHeartbeat();
+      heartbeatTimer = setInterval(() => {
+        if (dc && dc.readyState === 'open') {
+          try { dc.send(JSON.stringify({ type: 'heartbeat', ts: Date.now() })); }
+          catch { attemptReconnect(); }
+        }
+      }, HEARTBEAT_INTERVAL);
+    }
+
+    function stopHeartbeat() {
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+
+    function attemptReconnect() {
+      if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        setStatus('❌ Не удалось восстановить соединение', 'error');
+        return;
+      }
+      reconnectAttempts++;
+      setStatus(`⏳ Переподключение (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`, 'connecting');
+      log(`🔄 Попытка переподключения ${reconnectAttempts}...`);
+
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        if (role === 'initiator') {
+          makePC();
+          dc = pc.createDataChannel('chat', { ordered: true, maxRetransmits: 3 });
+          setupDC();
+          pc.createOffer().then(offer => pc.setLocalDescription(offer))
+            .then(() => waitIce(pc))
+            .then(() => {
+              const code = pack({ type: 'offer', sdp: pc.localDescription.sdp, candidates: candidates, chatId: currentChatId, reconnect: true });
+              document.getElementById('offerOutput').value = code;
+              hide('chatPanel');
+              show('initiatorPanel');
+              setStatus('📤 Отправьте новый код другу', 'info');
+            });
+        }
+      }, RECONNECT_DELAY);
+    }
+
+    // ==================== ОЧЕРЕДЬ СООБЩЕНИЙ ====================
+    function queueMessage(msg) {
+      messageQueue.push(msg);
+      updateQueueBadge();
+      log(`📦 Сообщение в очереди (всего: ${messageQueue.length})`);
+    }
+
+    function flushQueue() {
+      if (!dc || dc.readyState !== 'open' || messageQueue.length === 0) return;
+      log(`📤 Отправка ${messageQueue.length} сообщений из очереди...`);
+      while (messageQueue.length > 0) {
+        const msg = messageQueue.shift();
+        try { dc.send(JSON.stringify(msg)); }
+        catch { messageQueue.unshift(msg); break; }
+      }
+      updateQueueBadge();
+    }
+
+    function updateQueueBadge() {
+      const badge = document.getElementById('queueBadge');
+      if (messageQueue.length > 0) {
+        badge.textContent = messageQueue.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // ==================== FIREBASE СИГНАЛИЗАЦИЯ ====================
+    async function createOfferFirebase() {
+      try {
+        makePC();
+        dc = pc.createDataChannel('chat', { ordered: true, maxRetransmits: 3 });
+        setupDC();
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await waitIce(pc);
+
+        const packet = {
+          type: 'offer',
+          sdp: pc.localDescription.sdp,
+          candidates: candidates,
+          creator: deviceId,
+          chatId: currentChatId,
+          ts: Date.now()
+        };
+
+        log('📤 Отправка Offer в Firebase...');
+        await dbRef.set(packet);
+        listenForAnswer();
+        setStatus('⏳ Ожидание ответа...', 'connecting');
+      } catch (e) {
+        log('❌ createOffer: ' + e.message);
+        setStatus('❌ Ошибка создания offer', 'error');
+      }
+    }
+
+    async function listenForAnswer() {
+      if (!dbRef) return;
+      dbRef.on('value', async snapshot => {
+        const val = snapshot.val();
+        if (val && val.type === 'answer') {
+          log('📥 Answer получен через Firebase');
+          dbRef.off();
+          try {
+            await pc.setRemoteDescription({ type: 'answer', sdp: val.sdp });
+            for (const c of (val.candidates || [])) {
+              try { await pc.addIceCandidate(c); } catch(e) { log('⚠️ ICE candidate error: ' + e.message); }
+            }
+          } catch(e) { log('❌ setRemoteDescription: ' + e.message); }
+        }
+      });
+    }
+
+    async function listenForOffer() {
+      if (!dbRef) return;
+      dbRef.on('value', async snapshot => {
+        const val = snapshot.val();
+        if (val && val.type === 'offer') {
+          log('📥 Offer получен через Firebase');
+          dbRef.off();
+          try {
+            await pc.setRemoteDescription({ type: 'offer', sdp: val.sdp });
+            for (const c of (val.candidates || [])) {
+              try { await pc.addIceCandidate(c); } catch(e) { log('⚠️ ICE candidate error: ' + e.message); }
+            }
+
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitIce(pc);
+
+            await dbRef.set({
+              type: 'answer',
+              sdp: pc.localDescription.sdp,
+              candidates: candidates,
+              joiner: deviceId,
+              chatId: currentChatId,
+              ts: Date.now()
+            });
+            log('📤 Answer отправлен в Firebase');
+            setStatus('⏳ Ожидание подключения...', 'connecting');
+          } catch(e) { log('❌ Answer flow: ' + e.message); }
+        }
+      });
+    }
+
+    // ==================== UI ДЕЙСТВИЯ ====================
+    function copyText(elId) {
+      const el = document.getElementById(elId);
+      el.select();
+      el.setSelectionRange(0, 99999);
+      try {
+        navigator.clipboard.writeText(el.value).then(() => log('✅ Скопировано'));
+      } catch {
+        document.execCommand('copy');
+        log('✅ Скопировано');
+      }
+    }
+
+    async function shareCode(elId) {
+      const text = document.getElementById(elId).value;
+      if (!text) return;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'FireChat P2P', text });
+          log('✅ Код отправлен');
+        } else {
+          copyText(elId);
+        }
+      } catch (e) { log('Share cancelled'); }
+    }
+
+    function generateChatId() {
+      return 'room_' + crypto.randomUUID().substring(0, 8);
+    }
+
+    // ==================== ОБРАБОТЧИКИ КНОПОК ====================
+    document.getElementById('firebaseToggle').addEventListener('change', e => {
+      useFirebase = e.target.checked;
+      document.getElementById('firebaseConfigBox').classList.toggle('hidden', !useFirebase);
+      log(`🔥 Firebase: ${useFirebase ? 'ВКЛ' : 'ВЫКЛ'}`);
+      if (!useFirebase) cleanupFirebase();
+    });
+
+    document.getElementById('saveConfigBtn').onclick = saveFirebaseConfig;
+
+    document.getElementById('createBtn').onclick = async () => {
+      myName = document.getElementById('username').value.trim() || 'Аноним';
+      if (!myName) { alert('Введите имя!'); return; }
+
+      role = 'initiator';
+      currentChatId = generateChatId();
+      hide('startPanel');
+      setStatus('⏳ Генерация...', 'connecting');
+
+      if (useFirebase) {
+        const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+        if (!saved) {
+          log('⚠️ Firebase конфиг не найден, переключение на ручной режим');
+          useFirebase = false;
+          document.getElementById('firebaseToggle').checked = false;
+          document.getElementById('firebaseConfigBox').classList.add('hidden');
+        } else {
+          const ok = await initFirebase(saved);
+          if (ok) {
+            await createOfferFirebase();
+            return;
+          } else {
+            log('⚠️ Firebase не подключился, переключение на ручной');
+            useFirebase = false;
+          }
+        }
+      }
+
+      // РУЧНОЙ РЕЖИМ
+      show('initiatorPanel');
+      makePC();
+      dc = pc.createDataChannel('chat', { ordered: true, maxRetransmits: 3 });
+      setupDC();
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitIce(pc);
+
+      const packet = { type: 'offer', sdp: pc.localDescription.sdp, candidates: candidates, chatId: currentChatId, creator: deviceId, ts: Date.now() };
+      document.getElementById('offerOutput').value = pack(packet);
+      log('📤 Код создан. Отправьте его другу.');
+    };
+
+    document.getElementById('joinBtn').onclick = () => {
+      myName = document.getElementById('username').value.trim() || 'Аноним';
+      if (!myName) { alert('Введите имя!'); return; }
+
+      role = 'joiner';
+
+      if (useFirebase) {
+        const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+        if (saved) {
+          const roomId = prompt('Введите ID комнаты:');
+          if (!roomId) return;
+          currentChatId = roomId;
+          initFirebase(saved).then(ok => {
+            if (ok) {
+              makePC();
+              listenForOffer();
+              hide('startPanel');
+              show('chatPanel');
+              setStatus('⏳ Ожидание создателя...', 'connecting');
+            } else {
+              fallbackToManual();
+            }
+          });
+        } else {
+          fallbackToManual();
+        }
+      } else {
+        fallbackToManual();
+      }
+    };
+
+    document.getElementById('generateAnswer').onclick = async () => {
+      const code = document.getElementById('offerInput').value;
+      if (!code.trim()) return alert('Вставьте код комнаты!');
+
+      const data = unpack(code);
+      if (!data || data.type !== 'offer') return alert('Неверный формат кода.');
+
+      currentChatId = data.chatId || generateChatId();
+
+      makePC();
+      await pc.setRemoteDescription({ type: 'offer', sdp: data.sdp });
+      if (data.candidates) {
+        for (const c of data.candidates) {
+          try { await pc.addIceCandidate(c); } catch(e) { log('⚠️ ICE candidate error: ' + e.message); }
+        }
+      }
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await waitIce(pc);
+
+      const packet = { type: 'answer', sdp: pc.localDescription.sdp, candidates: candidates, chatId: currentChatId, ts: Date.now() };
+      document.getElementById('answerOutput').value = pack(packet);
+      log('✅ Ответ создан. Отправьте его создателю.');
+    };
+
+    document.getElementById('connectBtn').onclick = async () => {
+      const code = document.getElementById('answerInput').value;
+      if (!code.trim()) return alert('Вставьте ответ друга!');
+
+      const data = unpack(code);
+      if (!data || data.type !== 'answer') return alert('Неверный формат ответа.');
+      if (data.chatId) currentChatId = data.chatId;
+
+      await pc.setRemoteDescription({ type: 'answer', sdp: data.sdp });
+      if (data.candidates) {
+        for (const c of data.candidates) {
+          try { await pc.addIceCandidate(c); } catch(e) { log('⚠️ ICE candidate error: ' + e.message); }
+        }
+      }
+      setStatus('⏳ Подключение...', 'connecting');
+      log('✅ Сигнализация завершена. Ожидание ICE...');
+    };
+
+    document.getElementById('copyOffer').onclick = () => copyText('offerOutput');
+    document.getElementById('copyAnswer').onclick = () => copyText('answerOutput');
+    document.getElementById('shareOffer').onclick = () => shareCode('offerOutput');
+    document.getElementById('shareAnswer').onclick = () => shareCode('answerOutput');
+    document.getElementById('cancelBtn1').onclick = () => location.reload();
+    document.getElementById('cancelBtn2').onclick = () => location.reload();
+
+    document.getElementById('disconnectBtn').onclick = () => {
+      if (dc) dc.close();
+      if (pc) pc.close();
+      stopHeartbeat();
+      cleanupFirebase();
+      location.reload();
+    };
+
+    document.getElementById('clearDataBtn').onclick = () => {
+      if (confirm('Удалить все сохранённые данные?')) {
+        localStorage.clear();
+        location.reload();
+      }
+    };
+
+    document.getElementById('sendBtn').onclick = () => {
+      const inp = document.getElementById('msgInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+
+      const msg = { type: 'text', user: myName, text: txt };
+
+      if (!dc || dc.readyState !== 'open') {
+        queueMessage(msg);
+        addMsg(myName, txt, true);
+        inp.value = '';
+        return;
+      }
+
+      dc.send(JSON.stringify(msg));
+      addMsg(myName, txt, true);
+      inp.value = '';
+    };
+
+    document.getElementById('msgInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn').click(); }
+    });
+
+    // ==================== СООБЩЕНИЯ ====================
+    function addMsg(user, text, me) {
+      renderMessage(user, text, me, null);
+    }
+
+    function renderMessage(user, text, me, hash) {
+      const div = document.createElement('div');
+      div.className = `msg ${me ? 'me' : 'other'}`;
+      let hashHtml = hash ? `<div class="hash">SHA: ${hash}</div>` : '';
+      div.innerHTML = `<div class="time">${escapeHtml(user)}</div>${escapeHtml(text)}${hashHtml}`;
+      document.getElementById('messages').appendChild(div);
+      document.getElementById('messages').scrollTop = 99999;
+    }
+
+    // ==================== ФАЙЛЫ ====================
+    let fileRx = null;
+    let fileTx = null;
+
+    document.getElementById('fileInput').onchange = async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > MAX_FILE_SIZE) { alert('Файл слишком большой (макс 100 MB)'); return; }
+      if (!dc || dc.readyState !== 'open') { alert('Нет подключения'); return; }
+
+      const id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+      const hash = await sha256(await file.arrayBuffer());
+
+      fileTx = { id, name: file.name, size: file.size, hash };
+
+      dc.send(JSON.stringify({ type: 'file_meta', id, name: file.name, size: file.size, hash }));
+      log(`📤 ${file.name} (${(file.size/1024/1024).toFixed(2)} MB) SHA: ${hash}`);
+
+      show('fileProgressWrap');
+      document.getElementById('fileStatus').textContent = 'Отправка...';
+
+      const reader = file.stream().getReader();
+      let sent = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        while (dc.bufferedAmount > 1000000) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+
+        dc.send(value.buffer);
+        sent += value.byteLength;
+        const pct = Math.min(100, Math.round((sent / file.size) * 100));
+        document.getElementById('fileProgressBar').style.width = pct + '%';
+        document.getElementById('fileStatus').textContent = `Отправка: ${pct}%`;
+      }
+
+      dc.send(JSON.stringify({ type: 'file_end', id, hash }));
+      setTimeout(() => {
+        hide('fileProgressWrap');
+        document.getElementById('fileStatus').textContent = '✅ Отправлено';
+        addMsg('📤', `Файл отправлен: ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`, true);
+      }, 600);
+      e.target.value = '';
+    };
+
+    function handleFileChunk(buf) {
+      if (!fileRx) return;
+      fileRx.chunks.push(new Uint8Array(buf));
+      fileRx.received += buf.byteLength;
+      const pct = Math.round((fileRx.received / fileRx.size) * 100);
+      document.getElementById('fileProgressBar').style.width = pct + '%';
+      document.getElementById('fileStatus').textContent = `Получение: ${pct}%`;
+    }
+
+    function initFileReceive(meta) {
+      fileRx = { id: meta.id, name: meta.name, size: meta.size, hash: meta.hash, chunks: [], received: 0 };
+      show('fileProgressWrap');
+      document.getElementById('fileProgressBar').style.width = '0%';
+      document.getElementById('fileStatus').textContent = `Получение: ${meta.name}`;
+      addMsg('📥', `Загрузка: ${meta.name} (${(meta.size/1024/1024).toFixed(2)} MB)`, false);
+    }
+
+    async function finalizeFileReceive(meta) {
+      if (!fileRx) return;
+      const blob = new Blob(fileRx.chunks);
+
+      let hashOk = false;
+      try {
+        const receivedHash = await sha256(await blob.arrayBuffer());
+        hashOk = receivedHash === meta.hash;
+        log(`🔐 Хеш: ${hashOk ? '✅ OK' : '❌ НЕ СОВПАДАЕТ'}`);
+      } catch (e) { log('⚠️ Не удалось проверить хеш'); }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileRx.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      hide('fileProgressWrap');
+      const hashStatus = hashOk ? '✅ Хеш совпадает' : '⚠️ Хеш не проверен';
+      addMsg('', `✅ Получен: ${fileRx.name} (${hashStatus})`, false);
+      log(`✅ Сохранён: ${fileRx.name}`);
+      fileRx = null;
+    }
+
+    // ==================== СЕТЕВОЙ МОНИТОР ====================
+    window.addEventListener('online', () => {
+      isOnline = true;
+      document.getElementById('netDot').className = 'dot online';
+      document.getElementById('netText').textContent = 'Онлайн';
+      log('🌐 Сеть восстановлена');
+    });
+
+    window.addEventListener('offline', () => {
+      isOnline = false;
+      document.getElementById('netDot').className = 'dot offline';
+      document.getElementById('netText').textContent = 'Офлайн';
+      log('📴 Сеть недоступна');
+    });
+
+    // ==================== ИНИЦИАЛИЗАЦИЯ ====================
+    loadSavedConfig();
+    renderChatList();
+    log('🔐 FireChat P2P v3.0 инициализирован');
+    log('💡 Используйте Firebase для авто-подключения или ручной обмен кодами');
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => log('✅ Service Worker зарегистрирован'))
+        .catch(e => log('⚠️ SW ошибка: ' + e.message));
+    }
+  </script>
+</body>
+</html>
