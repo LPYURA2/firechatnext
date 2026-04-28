@@ -1,7 +1,6 @@
 const CACHE_NAME = 'firechat-v3';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.json'];
 
-// Установка — кэшируем оболочку
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -10,7 +9,6 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Активация — чистим старый кэш
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -22,7 +20,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Стратегия: сеть → кэш → офлайн-страница
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
@@ -34,7 +31,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Кэш-first для статики, network-first для остального
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
@@ -53,7 +49,6 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background Sync — очередь офлайн-сообщений
 self.addEventListener('sync', (event) => {
   if (event.tag === 'firechat-send') {
     event.waitUntil(
@@ -67,7 +62,6 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Push-уведомления (заготовка)
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   event.waitUntil(
