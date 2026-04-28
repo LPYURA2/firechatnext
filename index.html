@@ -19,33 +19,25 @@
       height: 100vh; display: flex; flex-direction: column;
       overflow: hidden;
     }
-    /* Header */
     .header {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 16px; background: var(--surface);
       border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 10;
     }
     .header .back-btn {
       background: none; border: none; color: var(--primary);
       font-size: 24px; cursor: pointer; padding: 4px;
     }
-    .header .title { flex: 1; font-weight: 600; font-size: 16px; }
+    .header .title { flex: 1; font-weight: 600; }
     .header .status {
       font-size: 11px; padding: 4px 10px;
       border-radius: 12px; background: var(--border);
-      white-space: nowrap;
     }
     .status.connected { background: var(--success); color: #000; }
     .status.disconnected { background: var(--danger); }
     .status.reconnecting { background: var(--warning); color: #000; }
-    .status.auto { background: var(--primary); color: #fff; }
-
-    /* Views */
     .view { display: none; flex: 1; overflow-y: auto; padding: 16px; }
     .view.active { display: flex; flex-direction: column; }
-
-    /* Menu */
     .menu { align-items: center; justify-content: center; gap: 20px; text-align: center; }
     .menu h2 { margin-bottom: 8px; }
     .mode-indicator {
@@ -55,7 +47,6 @@
     }
     .mode-indicator.auto { border-color: var(--primary); color: var(--primary); }
     .mode-indicator.manual { border-color: var(--warning); color: var(--warning); }
-    
     .btn {
       background: var(--primary); color: white; border: none;
       padding: 14px 28px; border-radius: 12px; font-size: 16px;
@@ -66,13 +57,10 @@
     .btn.secondary { background: var(--surface); border: 1px solid var(--border); }
     .btn.danger { background: var(--danger); }
     .btn.small { padding: 8px 16px; font-size: 13px; max-width: none; width: auto; }
-
-    /* Code exchange */
     .code-box {
       background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; padding: 12px; margin: 12px 0;
       font-family: monospace; word-break: break-all; font-size: 12px;
-      max-height: 120px; overflow-y: auto;
     }
     .code-row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
     .code-input {
@@ -81,17 +69,15 @@
       font-size: 14px;
     }
     .hint { font-size: 12px; color: var(--text-dim); margin: 8px 0; line-height: 1.4; }
-    .hint strong { color: var(--text); }
-
-    /* Firebase toggle */
     .firebase-toggle {
       display: flex; align-items: center; gap: 8px;
       padding: 10px; background: var(--surface);
       border-radius: 10px; margin: 12px 0; font-size: 13px;
     }
     .firebase-toggle input { width: 18px; height: 18px; }
-
-    /* Chat */
+    .firebase-config-block {
+      width: 100%; max-width: 300px; margin: 8px 0;
+    }
     .chat-messages {
       flex: 1; overflow-y: auto; display: flex; flex-direction: column;
       gap: 8px; padding-bottom: 80px;
@@ -104,74 +90,57 @@
     .message.own { align-self: flex-end; background: var(--primary); color: #000; }
     .message.system {
       align-self: center; background: transparent; color: var(--text-dim);
-      font-size: 12px; text-align: center; max-width: 90%;
+      font-size: 12px; text-align: center;
     }
     .message .meta { font-size: 10px; opacity: 0.7; margin-top: 4px; }
-    .message.file { background: var(--surface); border: 1px solid var(--border); }
-    .message.file a { color: var(--primary); text-decoration: none; }
-
-    /* Input area */
     .chat-input {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: var(--surface); border-top: 1px solid var(--border);
       padding: 10px 12px; display: flex; gap: 8px; align-items: center;
-      z-index: 20;
     }
     .chat-input .file-btn, .chat-input .send-btn {
       background: none; border: none; font-size: 20px;
       cursor: pointer; padding: 8px; color: var(--primary);
-      min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center;
     }
     .chat-input .send-btn { color: var(--success); }
     .chat-input input {
       flex: 1; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 12px 16px; border-radius: 20px;
-      outline: none; font-size: 14px;
+      color: var(--text); padding: 12px; border-radius: 20px;
+      outline: none;
     }
-
-    /* Logs */
     .logs {
       font-size: 11px; color: var(--text-dim);
       background: #000; padding: 8px; border-radius: 8px;
       max-height: 120px; overflow-y: auto; margin-top: 8px;
       font-family: monospace;
     }
-
-    /* Hidden inputs */
-    #fileInput, #firebaseConfigInput { display: none; }
-
-    /* Utility */
+    #fileInput { display: none; }
     .hidden { display: none !important; }
-    .text-center { text-align: center; }
     .mt-2 { margin-top: 8px; }
-    .mb-2 { margin-bottom: 8px; }
   </style>
 </head>
 <body>
-  <!-- Header -->
   <div class="header">
     <button class="back-btn hidden" id="backBtn">◀</button>
     <div class="title">🔐 FireChat P2P</div>
     <div class="status disconnected" id="status">Не подключено</div>
   </div>
 
-  <!-- Menu View -->
   <div class="view menu active" id="menuView">
     <h2>Онлайн</h2>
     
-    <!-- Mode indicator -->
     <div class="mode-indicator manual" id="modeIndicator">
       🟡 Ручной режим (без Firebase)
     </div>
     
-    <!-- Firebase toggle -->
     <div class="firebase-toggle">
       <input type="checkbox" id="firebaseToggle">
-      <label for="firebaseToggle">🔥 Использовать Firebase для авто-подключения</label>
+      <label for="firebaseToggle">🔥 Использовать Firebase</label>
     </div>
-    <div id="firebaseConfigBlock" class="hidden" style="width:100%;max-width:300px;">
-      <input type="text" id="firebaseConfigInput" class="code-input" placeholder="Вставьте Firebase config (JSON)" style="margin-bottom:8px;">
-      <button class="btn small secondary" id="saveFirebaseConfig" style="width:100%;">💾 Сохранить конфигурацию</button>
+    
+    <div id="firebaseConfigBlock" class="firebase-config-block hidden">
+      <input type="text" id="firebaseConfigInput" class="code-input" placeholder="Вставьте Firebase config (JSON)" style="margin-bottom:8px; font-size:11px;">
+      <button class="btn small secondary" id="saveFirebaseConfig" style="width:100%;">💾 Сохранить</button>
     </div>
     
     <input type="text" id="userName" class="code-input" placeholder="Введите ваше имя" maxlength="20" style="max-width:300px;text-align:center;">
@@ -187,17 +156,9 @@
     <button class="btn small secondary mt-2" id="showLogsBtn">🐞 Логи</button>
   </div>
 
-  <!-- Code Exchange View -->
   <div class="view" id="codeView">
     <h3 id="codeTitle">📤 Код комнаты</h3>
     
-    <!-- Auto mode notice -->
-    <div id="autoModeNotice" class="hidden hint" style="background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--primary);">
-      🟢 <strong>Авто-режим:</strong> Сигнальные данные синхронизируются через Firebase. 
-      Ручной обмен не требуется, но доступен как резервный вариант.
-    </div>
-    
-    <!-- Creator side -->
     <div id="creatorStep">
       <p><strong>1️⃣ Отправьте этот код другу:</strong></p>
       <div class="code-box" id="myCode"></div>
@@ -212,15 +173,9 @@
         <button class="btn" id="connectBtn">✅ Подключить</button>
         <button class="btn danger" id="cancelCreate">❌ Отмена</button>
       </div>
-      
-      <!-- Fallback notice -->
-      <p class="hint">
-        💡 Если друг не получает авто-сигнал — используйте ручной обмен кодами выше.
-        После подключения сигнальные данные автоматически удаляются.
-      </p>
+      <p class="hint">💡 Совет: код можно отправить через мессенджер, email или QR.</p>
     </div>
 
-    <!-- Joiner side -->
     <div id="joinerStep" class="hidden">
       <p><strong>1️⃣ Вставьте код комнаты:</strong></p>
       <input type="text" id="partnerCode" class="code-input" placeholder="Вставьте код...">
@@ -235,40 +190,27 @@
       
       <button class="btn danger mt-2" id="cancelJoin">❌ Отмена</button>
     </div>
-    
-    <!-- Auto-connect status -->
-    <div id="autoConnectStatus" class="hidden text-center mt-2">
-      <div class="hint">🔄 Ожидание подключения через Firebase...</div>
-      <button class="btn small secondary" id="fallbackToManual">🔧 Переключиться на ручной режим</button>
-    </div>
   </div>
 
-  <!-- Chat View -->
   <div class="view" id="chatView">
     <div class="chat-messages" id="chatMessages">
-      <div class="message system">🔒 Все сообщения и файлы передаются напрямую (P2P), шифруются DTLS. Сервер не используется.</div>
+      <div class="message system">🔒 Все сообщения передаются напрямую (P2P). Сервер не используется.</div>
     </div>
     <div class="chat-input">
-      <button class="file-btn" id="fileBtn" title="Прикрепить файл">➕</button>
+      <button class="file-btn" id="fileBtn">📎</button>
       <input type="text" id="messageInput" placeholder="Введите сообщение..." autocomplete="off">
-      <button class="send-btn" id="sendBtn" title="Отправить">➤</button>
+      <button class="send-btn" id="sendBtn">➤</button>
     </div>
     <input type="file" id="fileInput" multiple>
   </div>
 
-  <!-- Logs View -->
   <div class="view" id="logsView">
     <h3>🐞 Логи</h3>
     <div class="logs" id="logs"></div>
-    <div class="code-row mt-2">
-      <button class="btn small secondary" onclick="document.getElementById('logs').innerHTML=''">🗑️ Очистить</button>
-      <button class="btn small secondary" id="exportLogs">📥 Экспорт</button>
-    </div>
+    <button class="btn small secondary mt-2" onclick="document.getElementById('logs').innerHTML=''">🗑️ Очистить</button>
   </div>
 
-  <!-- Firebase SDK (загружается динамически при необходимости) -->
   <script>
-    // ========== Глобальные переменные ==========
     let pc = null, dc = null;
     let localDescription = null, isCreator = false;
     let currentChatId = null, firebaseRef = null;
@@ -281,12 +223,10 @@
     
     localStorage.setItem('fc_device_id', deviceId);
 
-    // WebRTC конфигурация с оптимизацией для мобильных
     const PC_CONFIG = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' }
       ],
       iceCandidatePoolSize: 10,
       iceTransportPolicy: 'all',
@@ -294,7 +234,6 @@
       rtcpMuxPolicy: 'require'
     };
 
-    // ========== DOM элементы ==========
     const views = {
       menu: document.getElementById('menuView'),
       code: document.getElementById('codeView'),
@@ -312,14 +251,10 @@
     const logsEl = document.getElementById('logs');
     const firebaseToggle = document.getElementById('firebaseToggle');
     const firebaseConfigBlock = document.getElementById('firebaseConfigBlock');
-    const autoModeNotice = document.getElementById('autoModeNotice');
-    const autoConnectStatus = document.getElementById('autoConnectStatus');
 
-    // ========== Утилиты ==========
-    function log(msg, level = 'info') {
-      const ts = new Date().toLocaleTimeString();
-      console.log(`[${level.toUpperCase()}] ${msg}`);
-      logsEl.innerHTML += `<div>[${ts}] ${escapeHtml(msg)}</div>`;
+    function log(msg) {
+      console.log(msg);
+      logsEl.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${escapeHtml(msg)}</div>`;
       logsEl.scrollTop = logsEl.scrollHeight;
     }
 
@@ -330,8 +265,7 @@
     }
 
     function compress(str) {
-      return btoa(unescape(encodeURIComponent(str)))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
 
     function decompress(str) {
@@ -340,16 +274,10 @@
       return decodeURIComponent(escape(atob(str)));
     }
 
-    function generateChatId() {
-      return crypto.randomUUID().substring(0, 8);
-    }
-
     function showView(name) {
       Object.values(views).forEach(v => v.classList.remove('active'));
       views[name].classList.add('active');
       backBtn.classList.toggle('hidden', name === 'menu');
-      if (name === 'chat') requestWakeLock();
-      else releaseWakeLock();
     }
 
     function updateStatus(state, text) {
@@ -357,60 +285,15 @@
       statusEl.textContent = text;
     }
 
-    function addMessage(text, own = false, system = false, html = false) {
+    function addMessage(text, own = false, system = false) {
       const div = document.createElement('div');
       div.className = `message ${own ? 'own' : ''} ${system ? 'system' : ''}`;
-      if (html) {
-        div.innerHTML = `<div>${text}</div>` + 
-          (own || !system ? `<div class="meta">${new Date().toLocaleTimeString()}</div>` : '');
-      } else {
-        div.innerHTML = `<div>${escapeHtml(text)}</div>` + 
-          (own || !system ? `<div class="meta">${new Date().toLocaleTimeString()}</div>` : '');
-      }
+      div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">${new Date().toLocaleTimeString()}</div>`;
       chatMessages.appendChild(div);
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // ========== Wake Lock ==========
-    async function requestWakeLock() {
-      if ('wakeLock' in navigator) {
-        try {
-          wakeLock = await navigator.wakeLock.request('screen');
-          log('🔒 Wake Lock активирован');
-          wakeLock.addEventListener('release', () => {
-            log('🔓 Wake Lock отпущен');
-            // При возврате в фон — проверяем соединение
-            setTimeout(() => { if (dc?.readyState !== 'open') handleDisconnect(); }, 1000);
-          });
-        } catch (e) { log('⚠️ Wake Lock: ' + e.message, 'warn'); }
-      }
-    }
-
-    function releaseWakeLock() {
-      if (wakeLock) { wakeLock.release(); wakeLock = null; }
-    }
-
-    // ========== Heartbeat ==========
-    function startHeartbeat() {
-      stopHeartbeat();
-      lastPong = Date.now();
-      heartbeatTimer = setInterval(() => {
-        if (dc?.readyState === 'open') {
-          if (Date.now() - lastPong > 10000) {
-            log('💔 Heartbeat timeout — соединение неактивно', 'warn');
-            handleDisconnect();
-          } else {
-            dc.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
-          }
-        }
-      }, 3000);
-    }
-
-    function stopHeartbeat() {
-      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-    }
-
-    // ========== Firebase (опционально) ==========
+    // Firebase
     async function initFirebase(configJson) {
       if (!configJson) return false;
       try {
@@ -418,7 +301,6 @@
         try { config = JSON.parse(configJson); }
         catch { return false; }
         
-        // Динамическая загрузка Firebase SDK
         if (typeof firebase === 'undefined') {
           await new Promise((resolve, reject) => {
             const script = document.createElement('script');
@@ -438,81 +320,15 @@
         
         firebaseApp = firebase.initializeApp(config, 'firechat-' + Date.now());
         firebaseDb = firebase.database();
-        log('🔥 Firebase инициализирован', 'success');
+        log('🔥 Firebase инициализирован');
         return true;
       } catch (e) {
-        log('❌ Firebase ошибка: ' + e.message, 'error');
+        log('❌ Firebase ошибка: ' + e.message);
         return false;
       }
     }
 
-    async function setupFirebaseSignaling(chatId, isCreator, onSignal) {
-      if (!firebaseDb) return false;
-      
-      const ref = firebaseDb.ref(`firechat/${chatId}`);
-      firebaseRef = ref;
-      
-      // Подписываемся на сигналы
-      autoConnectListener = ref.on('value', async (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-        
-        try {
-          // Creator ждёт answer, Joiner ждёт offer
-          if (isCreator && data.answer && !localDescription) {
-            log('📥 Получен answer через Firebase');
-            await pc.setRemoteDescription(JSON.parse(decompress(data.answer)));
-            await waitForConnection();
-          }
-          else if (!isCreator && data.offer && !localDescription) {
-            log('📥 Получен offer через Firebase');
-            await pc.setRemoteDescription(JSON.parse(decompress(data.offer)));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            await waitIce(pc);
-            await ref.update({ 
-              answer: compress(JSON.stringify(pc.localDescription)),
-              joinedAt: firebase.database.ServerValue.TIMESTAMP 
-            });
-            await waitForConnection();
-          }
-          // ICE candidates trickle
-          if (data.candidates && Array.isArray(data.candidates)) {
-            for (const c of data.candidates) {
-              if (c.sender !== deviceId) {
-                try { await pc.addIceCandidate(c.candidate); } catch(e) {}
-              }
-            }
-          }
-        } catch (e) { log('⚠️ Firebase signal error: ' + e.message, 'warn'); }
-      });
-      
-      return true;
-    }
-
-    async function sendViaFirebase(data) {
-      if (!firebaseRef) return false;
-      try {
-        const update = { ...data, sender: deviceId, ts: firebase.database.ServerValue.TIMESTAMP };
-        await firebaseRef.update(update);
-        return true;
-      } catch (e) { log('⚠️ Firebase send error: ' + e.message, 'warn'); return false; }
-    }
-
-    async function cleanupFirebase() {
-      if (autoConnectListener && firebaseRef) {
-        firebaseRef.off('value', autoConnectListener);
-        autoConnectListener = null;
-      }
-      // Удаляем сигнальные данные после подключения
-      if (firebaseRef && pc?.connectionState === 'connected') {
-        try { await firebaseRef.remove(); } catch(e) {}
-        log('🗑️ Сигнальные данные удалены из Firebase');
-      }
-      firebaseRef = null;
-    }
-
-    // ========== WebRTC ==========
+    // WebRTC
     function makePC() {
       pc = new RTCPeerConnection(PC_CONFIG);
       
@@ -520,40 +336,17 @@
         log(`🧊 ICE: ${pc.iceConnectionState}`);
         if (pc.iceConnectionState === 'connected') {
           updateStatus('connected', 'Онлайн');
-          cleanupFirebase(); // Удаляем сигнальные данные после успеха
         }
         if (['disconnected', 'failed'].includes(pc.iceConnectionState)) {
           handleDisconnect();
         }
       };
 
-      pc.onicegatheringstatechange = () => {
-        log(`📡 ICE gathering: ${pc.iceGatheringState}`);
-        // Отправляем новые кандидаты через Firebase если доступно
-        if (useFirebase && firebaseRef && pc.iceGatheringState === 'complete') {
-          // Кандидаты уже отправлялись по мере появления
-        }
-      };
-
-      pc.onicecandidate = async (e) => {
-        if (e.candidate && useFirebase && firebaseRef) {
-          try {
-            await firebaseRef.push({
-              type: 'candidate',
-              candidate: e.candidate,
-              sender: deviceId
-            });
-          } catch(err) { log('⚠️ Candidate send failed', 'warn'); }
-        }
+      pc.onicecandidate = (e) => {
+        if (e.candidate) log(`🧊 Новый кандидат`);
       };
 
       pc.ondatachannel = (e) => setupDataChannel(e.channel);
-      pc.onconnectionstatechange = () => {
-        log(`🔗 Connection: ${pc.connectionState}`);
-        if (pc.connectionState === 'connected') {
-          cleanupFirebase();
-        }
-      };
       return pc;
     }
 
@@ -562,16 +355,14 @@
       dc.binaryType = 'arraybuffer';
 
       dc.onopen = () => {
-        log('✅ DataChannel открыт', 'success');
+        log('✅ DataChannel открыт');
         updateStatus('connected', 'Онлайн');
         startHeartbeat();
         addMessage('🎉 Соединение установлено!', false, true);
-        // Сохраняем чат для быстрого доступа
-        if (currentChatId) saveChatToHistory(currentChatId, isCreator);
       };
 
       dc.onclose = () => { log('❌ DataChannel закрыт'); handleDisconnect(); };
-      dc.onerror = (e) => { log('⚠️ DataChannel ошибка: ' + (e.error?.message || e), 'error'); };
+      dc.onerror = (e) => { log('⚠️ DataChannel ошибка'); };
 
       dc.onmessage = async (e) => {
         lastPong = Date.now();
@@ -579,19 +370,8 @@
           const msg = JSON.parse(e.data);
           if (msg.type === 'ping') { dc.send(JSON.stringify({ type: 'pong' })); return; }
           if (msg.type === 'pong') return;
-          
-          if (msg.file) {
-            const blob = new Blob([new Uint8Array(msg.file.data)], { type: msg.file.type });
-            const url = URL.createObjectURL(blob);
-            const size = msg.file.size > 1024 ? (msg.file.size/1024).toFixed(1) + ' KB' : msg.file.size + ' B';
-            addMessage(`📎 <a href="${url}" download="${escapeHtml(msg.file.name)}">${escapeHtml(msg.file.name)}</a> <small>(${size})</small>`, false, false, true);
-          } else if (msg.text) {
-            addMessage(msg.text);
-          }
-        } catch (err) { 
-          log('⚠️ Parse error: ' + err.message, 'warn');
-          addMessage(e.data); 
-        }
+          if (msg.text) addMessage(msg.text);
+        } catch (err) { addMessage(e.data); }
       };
     }
 
@@ -611,189 +391,26 @@
       ]);
     }
 
-    async function waitForConnection(timeout = 30000) {
-      return new Promise((resolve, reject) => {
-        if (pc.connectionState === 'connected') return resolve();
-        const start = Date.now();
-        const check = () => {
-          if (pc.connectionState === 'connected') {
-            clearInterval(timer);
-            resolve();
-          } else if (Date.now() - start > timeout) {
-            clearInterval(timer);
-            reject(new Error('Connection timeout'));
+    function startHeartbeat() {
+      stopHeartbeat();
+      lastPong = Date.now();
+      heartbeatTimer = setInterval(() => {
+        if (dc?.readyState === 'open') {
+          if (Date.now() - lastPong > 10000) {
+            log('💔 Heartbeat timeout');
+            handleDisconnect();
+          } else {
+            dc.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
           }
-        };
-        const timer = setInterval(check, 500);
-      });
-    }
-
-    // ========== Сигнальный обмен (Ручной режим) ==========
-    async function createOfferManual() {
-      isCreator = true;
-      pc = makePC();
-      dc = pc.createDataChannel('chat', { ordered: true });
-      setupDataChannel(dc);
-      
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await waitIce(pc);
-      
-      localDescription = JSON.stringify(pc.localDescription);
-      const chatId = generateChatId();
-      const code = compress(JSON.stringify({ 
-        id: chatId, 
-        offer: localDescription, 
-        creator: deviceId,
-        ts: Date.now()
-      }));
-      
-      document.getElementById('myCode').textContent = code;
-      currentChatId = chatId;
-      
-      // Если Firebase активен — дублируем туда для авто-подключения
-      if (useFirebase && firebaseDb) {
-        setupFirebaseSignaling(chatId, true);
-        await sendViaFirebase({ offer: compress(JSON.stringify(pc.localDescription)) });
-        autoConnectStatus.classList.remove('hidden');
-        log('🔄 Ожидание авто-подключения или ручного ответа...');
-      }
-      
-      showView('code');
-      log('📤 Offer создан (ручной режим)');
-    }
-
-    async function generateAnswerManual() {
-      const code = document.getElementById('partnerCode').value.trim();
-      if (!code) return alert('Вставьте код комнаты');
-      
-      try {
-        const data = JSON.parse(decompress(code));
-        if (!data.offer) throw new Error('Неверный формат кода');
-        
-        isCreator = false;
-        currentChatId = data.id;
-        pc = makePC();
-        pc.ondatachannel = (e) => setupDataChannel(e.channel);
-        
-        await pc.setRemoteDescription(JSON.parse(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await waitIce(pc);
-        
-        const answerCode = compress(JSON.stringify({ 
-          answer: JSON.stringify(pc.localDescription), 
-          chatId: data.id,
-          ts: Date.now()
-        }));
-        document.getElementById('myAnswer').textContent = answerCode;
-        
-        // Firebase дублирование
-        if (useFirebase && firebaseDb) {
-          setupFirebaseSignaling(data.id, false);
-          await sendViaFirebase({ 
-            answer: compress(JSON.stringify(pc.localDescription)),
-            joinedAt: Date.now()
-          });
-          autoConnectStatus.classList.remove('hidden');
         }
-        
-        document.getElementById('creatorStep').classList.add('hidden');
-        document.getElementById('joinerStep').classList.remove('hidden');
-        log('📥 Answer создан (ручной режим)');
-      } catch (e) { 
-        alert('Ошибка: ' + e.message); 
-        log('❌ ' + e.message, 'error'); 
-      }
+      }, 3000);
     }
 
-    async function connectWithAnswerManual() {
-      const answerStr = document.getElementById('partnerAnswer').value.trim();
-      if (!answerStr || !pc) return alert('Вставьте ответ и создайте чат сначала');
-      
-      try {
-        const answerData = JSON.parse(decompress(answerStr));
-        await pc.setRemoteDescription(JSON.parse(answerData.answer));
-        await waitIce(pc);
-        await waitForConnection();
-        showView('chat');
-        log('✅ Подключено (ручной режим)!', 'success');
-      } catch (e) { 
-        alert('Ошибка подключения: ' + e.message); 
-        log('❌ ' + e.message, 'error'); 
-      }
+    function stopHeartbeat() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
     }
 
-    // ========== Firebase авто-режим ==========
-    async function createOfferAuto() {
-      isCreator = true;
-      currentChatId = generateChatId();
-      pc = makePC();
-      dc = pc.createDataChannel('chat', { ordered: true });
-      setupDataChannel(dc);
-      
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      
-      // Не ждём всех кандидатов — отправляем сразу + trickle
-      await setupFirebaseSignaling(currentChatId, true, (signal) => {
-        // Обработка входящих сигналов уже в setupFirebaseSignaling
-      });
-      
-      await sendViaFirebase({ 
-        offer: compress(JSON.stringify(pc.localDescription)),
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-      });
-      
-      // Отправляем начальные кандидаты
-      await waitIce(pc, 3000);
-      
-      showView('code');
-      autoModeNotice.classList.remove('hidden');
-      autoConnectStatus.classList.remove('hidden');
-      document.getElementById('creatorStep').classList.add('hidden');
-      log('🚀 Offer отправлен через Firebase, ожидание peer...');
-    }
-
-    async function joinChatAuto(chatId) {
-      isCreator = false;
-      currentChatId = chatId;
-      pc = makePC();
-      pc.ondatachannel = (e) => setupDataChannel(e.channel);
-      
-      await setupFirebaseSignaling(chatId, false);
-      
-      // Ждём offer от создателя
-      const ref = firebaseDb.ref(`firechat/${chatId}`);
-      const snapshot = await ref.once('value');
-      const data = snapshot.val();
-      
-      if (data?.offer) {
-        await pc.setRemoteDescription(JSON.parse(decompress(data.offer)));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await sendViaFirebase({ 
-          answer: compress(JSON.stringify(pc.localDescription)),
-          joinedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-        await waitIce(pc, 3000);
-        await waitForConnection();
-        showView('chat');
-        log('✅ Авто-подключение успешно!', 'success');
-      } else {
-        log('⏳ Ожидание offer от создателя...', 'info');
-        // UI покажет статус ожидания
-        showView('code');
-        autoModeNotice.classList.remove('hidden');
-        autoConnectStatus.classList.remove('hidden');
-        document.getElementById('joinerStep').classList.add('hidden');
-      }
-    }
-
-    // ========== Переподключение ==========
     async function handleDisconnect() {
-      if (pc?.iceConnectionState === 'connected') return;
-      
       updateStatus('reconnecting', 'Переподключение...');
       stopHeartbeat();
       
@@ -806,146 +423,120 @@
       
       reconnectAttempts++;
       log(`🔄 Попытка ${reconnectAttempts}/${maxReconnectAttempts}`);
-      
-      // Ждём 5 сек — возможно, сеть восстановится
       await new Promise(r => setTimeout(r, 5000));
       
       if (pc?.iceConnectionState === 'connected') {
-        log('✨ Соединение восстановилось');
         updateStatus('connected', 'Онлайн');
         startHeartbeat();
         return;
       }
       
-      // ICE Restart
       try {
         if (isCreator) {
           const offer = await pc.createOffer({ iceRestart: true });
           await pc.setLocalDescription(offer);
-          
-          if (useFirebase && firebaseRef) {
-            await sendViaFirebase({ 
-              offer: compress(JSON.stringify(pc.localDescription)),
-              restart: true 
-            });
-            log('🔄 ICE Restart отправлен через Firebase');
-          } else {
-            // Fallback на ручной код
-            await waitIce(pc);
-            const newCode = compress(JSON.stringify({ 
-              id: currentChatId, 
-              offer: JSON.stringify(pc.localDescription), 
-              creator: deviceId, 
-              restart: true 
-            }));
-            addMessage(`🔄 Новый код:\n${newCode}`, false, true);
-            navigator.clipboard?.writeText(newCode);
-          }
+          await waitIce(pc);
+          localDescription = JSON.stringify(pc.localDescription);
+          const newCode = compress(JSON.stringify({ 
+            id: currentChatId, 
+            offer: localDescription, 
+            creator: deviceId, 
+            restart: true 
+          }));
+          addMessage(`🔄 Новый код:\n${newCode}`, false, true);
+          navigator.clipboard?.writeText(newCode);
         } else {
-          if (useFirebase) {
-            log('🔄 Ожидание нового offer от создателя...');
-          } else {
-            addMessage('🔄 Запросите новый код у создателя', false, true);
-          }
+          addMessage('🔄 Запросите новый код у создателя', false, true);
         }
-      } catch (e) { log('❌ ICE Restart: ' + e.message, 'error'); }
+      } catch (e) { log('❌ ICE Restart: ' + e.message); }
     }
 
     function cleanup() {
       stopHeartbeat();
-      releaseWakeLock();
-      cleanupFirebase();
-      if (dc) { try { dc.close(); } catch(e) {} dc = null; }
-      if (pc) { try { pc.close(); } catch(e) {} pc = null; }
+      if (dc) { dc.close(); dc = null; }
+      if (pc) { pc.close(); pc = null; }
       localDescription = null;
       reconnectAttempts = 0;
     }
 
-    // ========== История чатов ==========
-    function saveChatToHistory(chatId, isCreator) {
-      const history = JSON.parse(localStorage.getItem('fc_history') || '[]');
-      const entry = { id: chatId, creator: isCreator, name: document.getElementById('userName').value || 'Аноним', ts: Date.now() };
-      const idx = history.findIndex(h => h.id === chatId);
-      if (idx >= 0) history[idx] = entry;
-      else history.unshift(entry);
-      localStorage.setItem('fc_history', JSON.stringify(history.slice(0, 10)));
-      renderSavedChats();
+    // Ручной режим
+    async function createOffer() {
+      isCreator = true;
+      pc = makePC();
+      dc = pc.createDataChannel('chat', { ordered: true });
+      setupDataChannel(dc);
+      
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitIce(pc);
+      
+      localDescription = JSON.stringify(pc.localDescription);
+      const code = compress(JSON.stringify({ 
+        id: crypto.randomUUID().substring(0, 8), 
+        offer: localDescription, 
+        creator: deviceId 
+      }));
+      
+      document.getElementById('myCode').textContent = code;
+      currentChatId = code;
+      showView('code');
+      log('📤 Offer создан');
     }
 
-    function renderSavedChats() {
-      const history = JSON.parse(localStorage.getItem('fc_history') || '[]');
-      const list = document.getElementById('savedChatsList');
-      if (!history.length) {
-        list.textContent = 'Нет сохранённых чатов';
-        return;
-      }
-      list.innerHTML = history.map(h => 
-        `<div style="padding:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-          <span>${escapeHtml(h.name)} • ${h.id}</span>
-          <button class="btn small secondary" onclick="quickJoin('${h.id}')">🔗</button>
-        </div>`
-      ).join('');
-      document.getElementById('savedChats').classList.remove('hidden');
+    async function generateAnswer() {
+      const code = document.getElementById('partnerCode').value.trim();
+      if (!code) return alert('Вставьте код комнаты');
+      
+      try {
+        const data = JSON.parse(decompress(code));
+        if (!data.offer) throw new Error('Неверный формат');
+        
+        isCreator = false;
+        pc = makePC();
+        pc.ondatachannel = (e) => setupDataChannel(e.channel);
+        
+        await pc.setRemoteDescription(JSON.parse(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await waitIce(pc);
+        
+        const answerCode = compress(JSON.stringify({ 
+          answer: JSON.stringify(pc.localDescription), 
+          chatId: data.id 
+        }));
+        document.getElementById('myAnswer').textContent = answerCode;
+        document.getElementById('creatorStep').classList.add('hidden');
+        document.getElementById('joinerStep').classList.remove('hidden');
+        currentChatId = code;
+        log('📥 Answer создан');
+      } catch (e) { alert('Ошибка: ' + e.message); }
     }
 
-    async function quickJoin(chatId) {
-      if (useFirebase && firebaseDb) {
-        await joinChatAuto(chatId);
-      } else {
-        showView('code');
-        document.getElementById('partnerCode').value = chatId; // placeholder
-        alert('Вставьте полный код комнаты или включите Firebase для авто-подключения');
-      }
+    async function connectWithAnswer() {
+      const answerStr = document.getElementById('partnerAnswer').value.trim();
+      if (!answerStr || !pc) return alert('Вставьте ответ');
+      
+      try {
+        const answerData = JSON.parse(decompress(answerStr));
+        await pc.setRemoteDescription(JSON.parse(answerData.answer));
+        await waitIce(pc);
+        showView('chat');
+        log('✅ Подключено!');
+      } catch (e) { alert('Ошибка: ' + e.message); }
     }
 
-    // ========== Отправка ==========
+    // Отправка
     function sendMessage() {
       const text = messageInput.value.trim();
       if (!text || dc?.readyState !== 'open') return;
-      
-      dc.send(JSON.stringify({ text, ts: Date.now() }));
+      dc.send(JSON.stringify({ text }));
       addMessage(text, true);
       messageInput.value = '';
     }
 
-    async function sendFile(file) {
-      if (dc?.readyState !== 'open') return;
-      const buffer = await file.arrayBuffer();
-      
-      // Ограничение ~16KB для надёжности
-      if (buffer.byteLength > 16000) {
-        return addMessage(`⚠️ Файл "${file.name}" слишком большой. Макс. ~16 КБ.`, false, true);
-      }
-      
-      dc.send(JSON.stringify({
-        file: { 
-          name: file.name, 
-          type: file.type, 
-          size: file.size, 
-           Array.from(new Uint8Array(buffer)) 
-        }
-      }));
-      addMessage(`📤 ${escapeHtml(file.name)}`, true);
-    }
-
-    // ========== Visibility API ==========
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { log('📴 Вкладка неактивна'); }
-      else { 
-        log('👁️ Вкладка активна'); 
-        if (dc?.readyState === 'open') {
-          // Проверяем соединение после возврата
-          setTimeout(() => {
-            if (pc?.iceConnectionState !== 'connected') handleDisconnect();
-          }, 1000);
-        }
-      }
-    });
-
-    // ========== Event listeners ==========
+    // Event listeners
     backBtn.onclick = () => { cleanup(); showView('menu'); };
     
-    // Firebase toggle
     firebaseToggle.onchange = (e) => {
       firebaseConfigBlock.classList.toggle('hidden', !e.target.checked);
       if (e.target.checked) {
@@ -954,115 +545,69 @@
           useFirebase = true;
           initFirebase(saved).then(ok => {
             modeIndicator.className = `mode-indicator ${ok ? 'auto' : 'manual'}`;
-            modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим (ошибка Firebase)';
+            modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим (ошибка)';
           });
         }
       } else {
         useFirebase = false;
         modeIndicator.className = 'mode-indicator manual';
         modeIndicator.textContent = '🟡 Ручной режим (без Firebase)';
-        cleanupFirebase();
       }
     };
     
     document.getElementById('saveFirebaseConfig').onclick = async () => {
       const config = document.getElementById('firebaseConfigInput').value.trim();
-      if (!config) return alert('Введите конфигурацию Firebase');
+      if (!config) return alert('Введите конфигурацию');
       
       const ok = await initFirebase(config);
       if (ok) {
         localStorage.setItem('fc_firebase_config', config);
         useFirebase = true;
-        firebaseToggle.checked = true;
         modeIndicator.className = 'mode-indicator auto';
         modeIndicator.textContent = '🟢 Авто-режим (Firebase)';
-        alert('✅ Firebase подключён! Теперь чаты будут подключаться автоматически.');
+        alert('✅ Firebase подключён!');
       } else {
-        alert('❌ Не удалось подключиться к Firebase. Проверьте конфигурацию.');
+        alert('❌ Ошибка Firebase. Проверьте JSON.');
       }
     };
     
-    // Кнопки меню
-    document.getElementById('createBtn').onclick = () => {
-      if (useFirebase && firebaseDb) createOfferAuto();
-      else createOfferManual();
-    };
-    document.getElementById('joinBtn').onclick = () => {
-      if (useFirebase && firebaseDb) {
-        const chatId = prompt('Введите ID чата для авто-подключения:');
-        if (chatId) joinChatAuto(chatId);
-      } else {
-        showView('code');
-      }
-    };
+    document.getElementById('createBtn').onclick = createOffer;
+    document.getElementById('joinBtn').onclick = () => showView('code');
     
-    // Копирование/шаринг кодов
     document.getElementById('copyCode').onclick = () => 
-      navigator.clipboard.writeText(document.getElementById('myCode').textContent)
-        .then(() => { log('📋 Код скопирован'); alert('Код скопирован в буфер!'); });
-        
+      navigator.clipboard.writeText(document.getElementById('myCode').textContent);
     document.getElementById('shareCode').onclick = () => {
       const code = document.getElementById('myCode').textContent;
-      if (navigator.share) navigator.share({ title: 'FireChat', text: `Код комнаты: ${code}` });
-      else navigator.clipboard.writeText(code).then(() => alert('Код скопирован!'));
+      if (navigator.share) navigator.share({ text: `FireChat: ${code}` });
+      else navigator.clipboard.writeText(code);
     };
     
-    document.getElementById('connectBtn').onclick = connectWithAnswerManual;
+    document.getElementById('connectBtn').onclick = connectWithAnswer;
     document.getElementById('cancelCreate').onclick = () => { cleanup(); showView('menu'); };
     
-    document.getElementById('generateAnswer').onclick = generateAnswerManual;
+    document.getElementById('generateAnswer').onclick = generateAnswer;
     document.getElementById('copyAnswer').onclick = () => 
-      navigator.clipboard.writeText(document.getElementById('myAnswer').textContent)
-        .then(() => { log('📋 Ответ скопирован'); alert('Ответ скопирован!'); });
-    document.getElementById('shareAnswer').onclick = () => {
-      const code = document.getElementById('myAnswer').textContent;
-      if (navigator.share) navigator.share({ title: 'FireChat', text: `Ответ: ${code}` });
-      else navigator.clipboard.writeText(code).then(() => alert('Ответ скопирован!'));
-    };
+      navigator.clipboard.writeText(document.getElementById('myAnswer').textContent);
     document.getElementById('cancelJoin').onclick = () => { cleanup(); showView('menu'); };
     
-    // Fallback to manual
-    document.getElementById('fallbackToManual').onclick = () => {
-      autoConnectStatus.classList.add('hidden');
-      autoModeNotice.classList.add('hidden');
-      if (isCreator) {
-        document.getElementById('creatorStep').classList.remove('hidden');
-      } else {
-        document.getElementById('joinerStep').classList.remove('hidden');
-      }
-      log('🔧 Переключено на ручной режим');
-    };
-    
-    // Чат
     sendBtn.onclick = sendMessage;
     messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
     
     fileBtn.onclick = () => fileInput.click();
-    fileInput.onchange = (e) => {
-      Array.from(e.target.files).forEach(sendFile);
-      fileInput.value = '';
-    };
+    fileInput.onchange = (e) => { fileInput.value = ''; };
     
-    // Логи
     document.getElementById('showLogsBtn').onclick = () => showView('logs');
-    document.getElementById('exportLogs').onclick = () => {
-      const blob = new Blob([logsEl.innerText], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `firechat-logs-${Date.now()}.txt`;
-      a.click(); URL.revokeObjectURL(url);
-    };
 
-    // ========== Service Worker ==========
+    // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(e => log('⚠️ SW error: ' + e.message, 'warn'));
+      navigator.serviceWorker.register('/sw.js');
     }
 
-    // ========== Init ==========
-    log('🚀 FireChat P2P v2.0 запущен');
-    log(`📱 Device ID: ${deviceId.substring(0,8)}...`);
+    // Init
+    log('🚀 FireChat запущен');
+    updateStatus('disconnected', 'Не подключено');
     
-    // Проверяем сохранённый Firebase config
+    // Проверяем сохранённый Firebase
     const savedFirebase = localStorage.getItem('fc_firebase_config');
     if (savedFirebase) {
       firebaseToggle.checked = true;
@@ -1070,13 +615,9 @@
       initFirebase(savedFirebase).then(ok => {
         useFirebase = ok;
         modeIndicator.className = `mode-indicator ${ok ? 'auto' : 'manual'}`;
-        modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим (ошибка при загрузке)';
-        if (ok) log('✅ Firebase загружен из сохранения', 'success');
+        modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим';
       });
     }
-    
-    updateStatus('disconnected', 'Не подключено');
-    renderSavedChats();
   </script>
 </body>
 </html>
