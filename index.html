@@ -9,343 +9,369 @@
   <style>
     :root {
       --bg: #0f0f0f; --surface: #1a1a1a; --primary: #0a84ff;
-      --text: #fff; --text-dim: #aaa; --danger: #ff453a;
-      --success: #30d158; --border: #333; --warning: #ff9f0a;
+      --text: #fff; --text-dim: #888; --danger: #ff453a;
+      --success: #30d158; --border: #2c2c2e; --warning: #ff9f0a;
+      --radius: 14px; --shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text);
-      height: 100vh; display: flex; flex-direction: column;
-      overflow: hidden;
+      background: var(--bg); color: var(--text); height: 100vh;
+      display: flex; flex-direction: column; overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
     .header {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 16px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+      height: 56px; flex-shrink: 0; z-index: 20;
     }
-    .header .back-btn {
-      background: none; border: none; color: var(--primary);
-      font-size: 24px; cursor: pointer; padding: 4px;
+    .header .title { font-weight: 700; font-size: 18px; letter-spacing: 0.5px; }
+    .status-badge {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      background: var(--border); color: var(--text-dim); font-weight: 600;
+      transition: all 0.3s ease;
     }
-    .header .title { flex: 1; font-weight: 600; }
-    .header .status {
-      font-size: 11px; padding: 4px 10px;
-      border-radius: 12px; background: var(--border);
-    }
-    .status.connected { background: var(--success); color: #000; }
-    .status.disconnected { background: var(--danger); }
-    .status.reconnecting { background: var(--warning); color: #000; }
-    .view { display: none; flex: 1; overflow-y: auto; padding: 16px; }
-    .view.active { display: flex; flex-direction: column; }
-    .menu { align-items: center; justify-content: center; gap: 20px; text-align: center; }
-    .menu h2 { margin-bottom: 8px; }
-    .mode-indicator {
-      font-size: 12px; padding: 6px 12px; border-radius: 20px;
-      background: var(--surface); border: 1px solid var(--border);
-      margin-bottom: 12px;
-    }
-    .mode-indicator.auto { border-color: var(--primary); color: var(--primary); }
-    .mode-indicator.manual { border-color: var(--warning); color: var(--warning); }
+    .status-badge.online { background: var(--success); color: #000; }
+    .status-badge.offline { background: var(--danger); color: #fff; }
+    .status-badge.reconnecting { background: var(--warning); color: #000; animation: pulse 1.5s infinite; }
+    .status-badge.auto { background: var(--primary); color: #fff; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+
+    .view { display: none; flex: 1; overflow-y: auto; padding: 20px; flex-direction: column; }
+    .view.active { display: flex; }
+    .menu { align-items: center; justify-content: center; text-align: center; gap: 16px; }
+    .menu h2 { margin-bottom: 8px; font-size: 24px; }
     .btn {
-      background: var(--primary); color: white; border: none;
-      padding: 14px 28px; border-radius: 12px; font-size: 16px;
-      cursor: pointer; width: 100%; max-width: 300px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--primary); color: #fff; border: none; padding: 14px 24px;
+      border-radius: var(--radius); font-size: 16px; font-weight: 600; cursor: pointer;
+      width: 100%; max-width: 320px; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: transform 0.1s, opacity 0.2s;
     }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn:active { transform: scale(0.98); opacity: 0.9; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn.secondary { background: var(--surface); border: 1px solid var(--border); }
     .btn.danger { background: var(--danger); }
-    .btn.small { padding: 8px 16px; font-size: 13px; max-width: none; width: auto; }
+    .btn.small { padding: 8px 14px; font-size: 13px; width: auto; max-width: none; }
+
+    .toggle-row {
+      display: flex; align-items: center; gap: 12px; background: var(--surface);
+      padding: 12px; border-radius: var(--radius); width: 100%; max-width: 320px;
+    }
+    .toggle-row label { flex: 1; font-size: 14px; text-align: left; }
+    .toggle-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); }
+
+    input[type="text"], textarea {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 12px; border-radius: 10px; width: 100%; font-size: 15px; outline: none;
+      margin-bottom: 8px; resize: vertical; font-family: inherit;
+    }
+    input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(10,132,255,0.2); }
+
     .code-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px; margin: 12px 0;
-      font-family: monospace; word-break: break-all; font-size: 12px;
+      background: #000; border: 1px solid var(--border); padding: 12px; border-radius: 8px;
+      font-family: monospace; font-size: 11px; word-break: break-all; margin: 10px 0;
+      max-height: 100px; overflow-y: auto; color: var(--success); white-space: pre-wrap;
     }
-    .code-row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-    .code-input {
-      flex: 1; min-width: 200px; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 10px 12px; border-radius: 8px;
-      font-size: 14px;
-    }
-    .hint { font-size: 12px; color: var(--text-dim); margin: 8px 0; line-height: 1.4; }
-    .firebase-toggle {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px; background: var(--surface);
-      border-radius: 10px; margin: 12px 0; font-size: 13px;
-    }
-    .firebase-toggle input { width: 18px; height: 18px; }
-    .firebase-config-block {
-      width: 100%; max-width: 300px; margin: 8px 0;
-    }
+    .hint { font-size: 12px; color: var(--text-dim); margin: 6px 0; line-height: 1.4; }
+    .flex-row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+
     .chat-messages {
-      flex: 1; overflow-y: auto; display: flex; flex-direction: column;
-      gap: 8px; padding-bottom: 80px;
+      flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+      padding: 10px 10px 80px 10px; scroll-behavior: smooth;
     }
-    .message {
-      max-width: 85%; padding: 10px 14px; border-radius: 18px;
-      background: var(--surface); align-self: flex-start;
-      word-wrap: break-word;
+    .msg {
+      max-width: 82%; padding: 10px 14px; border-radius: 16px; font-size: 15px;
+      line-height: 1.4; position: relative; animation: fadeIn 0.2s ease;
     }
-    .message.own { align-self: flex-end; background: var(--primary); color: #000; }
-    .message.system {
-      align-self: center; background: transparent; color: var(--text-dim);
-      font-size: 12px; text-align: center;
+    @keyframes fadeIn { from { opacity:0; transform: translateY(5px); } to { opacity:1; transform: translateY(0); } }
+    .msg.system { align-self: center; background: transparent; color: var(--text-dim); font-size: 12px; text-align: center; max-width: 90%; }
+    .msg.received { align-self: flex-start; background: var(--surface); border-bottom-left-radius: 4px; }
+    .msg.sent { align-self: flex-end; background: var(--primary); color: #000; border-bottom-right-radius: 4px; }
+    .msg .meta { font-size: 10px; opacity: 0.7; margin-top: 4px; text-align: right; display: flex; justify-content: space-between; }
+    .msg img { max-width: 100%; border-radius: 8px; margin-top: 6px; cursor: pointer; }
+    .msg a { color: inherit; text-decoration: underline; }
+
+    .input-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+      padding: 10px 12px; border-top: 1px solid var(--border); display: flex;
+      gap: 8px; align-items: center; z-index: 30;
     }
-    .message .meta { font-size: 10px; opacity: 0.7; margin-top: 4px; }
-    .chat-input {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--surface); border-top: 1px solid var(--border);
-      padding: 10px 12px; display: flex; gap: 8px; align-items: center;
+    .input-bar input { margin: 0; flex: 1; padding: 10px 15px; border-radius: 20px; background: var(--bg); }
+    .icon-btn {
+      background: none; border: none; font-size: 22px; cursor: pointer;
+      padding: 8px; color: var(--primary); transition: transform 0.1s;
     }
-    .chat-input .file-btn, .chat-input .send-btn {
-      background: none; border: none; font-size: 20px;
-      cursor: pointer; padding: 8px; color: var(--primary);
-    }
-    .chat-input .send-btn { color: var(--success); }
-    .chat-input input {
-      flex: 1; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); padding: 12px; border-radius: 20px;
-      outline: none;
-    }
+    .icon-btn:active { transform: scale(0.9); }
+    .send-btn { color: var(--primary); font-size: 24px; }
+
     .logs {
-      font-size: 11px; color: var(--text-dim);
-      background: #000; padding: 8px; border-radius: 8px;
-      max-height: 120px; overflow-y: auto; margin-top: 8px;
-      font-family: monospace;
+      font-family: monospace; font-size: 11px; color: var(--text-dim);
+      background: #000; padding: 10px; border-radius: 8px; white-space: pre-wrap;
+      max-height: 200px; overflow-y: auto; line-height: 1.5;
     }
+
     #fileInput { display: none; }
     .hidden { display: none !important; }
     .mt-2 { margin-top: 8px; }
+    .mb-2 { margin-bottom: 8px; }
+    .text-center { text-align: center; }
   </style>
 </head>
 <body>
   <div class="header">
-    <button class="back-btn hidden" id="backBtn">◀</button>
     <div class="title">🔐 FireChat P2P</div>
-    <div class="status disconnected" id="status">Не подключено</div>
+    <div class="status-badge offline" id="statusBadge">⚡ Оффлайн</div>
   </div>
 
+  <!-- MENU -->
   <div class="view menu active" id="menuView">
-    <h2>Онлайн</h2>
+    <h2>Безопасный чат</h2>
+    <input type="text" id="usernameInput" placeholder="Ваше имя (необязательно)" maxlength="20">
     
-    <div class="mode-indicator manual" id="modeIndicator">
-      🟡 Ручной режим (без Firebase)
+    <div class="toggle-row">
+      <input type="checkbox" id="firebaseToggle" checked>
+      <label>🔥 Авто-подключение (Firebase)</label>
+    </div>
+    <div id="firebaseConfigBox" class="hidden" style="width:100%;max-width:320px;">
+      <input type="text" id="firebaseConfigInput" placeholder="Вставьте JSON конфиг Firebase">
+      <button class="btn small secondary" onclick="saveFirebaseConfig()">💾 Сохранить</button>
+    </div>
+
+    <button class="btn" onclick="startChat('create')">🚀 Создать чат</button>
+    <button class="btn secondary" onclick="startChat('join')">🔗 Присоединиться</button>
+    
+    <div id="savedChatsBlock" class="hidden" style="width:100%;max-width:320px;margin-top:10px;">
+      <h3 style="font-size:16px;margin-bottom:8px;">📋 Мои чаты</h3>
+      <div id="savedChatsList" style="font-size:13px;color:var(--text-dim);">Нет сохранённых чатов</div>
     </div>
     
-    <div class="firebase-toggle">
-      <input type="checkbox" id="firebaseToggle">
-      <label for="firebaseToggle">🔥 Использовать Firebase</label>
+    <div class="flex-row" style="margin-top:16px;">
+      <button class="btn small secondary" onclick="showLogs()">🐞 Логи</button>
+      <button class="btn small secondary" onclick="clearAllData()">️ Сброс</button>
     </div>
-    
-    <div id="firebaseConfigBlock" class="firebase-config-block hidden">
-      <input type="text" id="firebaseConfigInput" class="code-input" placeholder="Вставьте Firebase config (JSON)" style="margin-bottom:8px; font-size:11px;">
-      <button class="btn small secondary" id="saveFirebaseConfig" style="width:100%;">💾 Сохранить</button>
-    </div>
-    
-    <input type="text" id="userName" class="code-input" placeholder="Введите ваше имя" maxlength="20" style="max-width:300px;text-align:center;">
-    
-    <button class="btn" id="createBtn">🚀 Создать чат</button>
-    <button class="btn secondary" id="joinBtn">🔗 Присоединиться</button>
-    
-    <div id="savedChats" class="hidden" style="margin-top:20px;">
-      <h3>📋 Мои чаты</h3>
-      <div id="savedChatsList">Нет сохранённых чатов</div>
-    </div>
-    
-    <button class="btn small secondary mt-2" id="showLogsBtn">🐞 Логи</button>
+    <div style="font-size:10px;color:var(--text-dim);margin-top:8px;">v2.1 Hybrid • P2P Encrypted</div>
   </div>
 
+  <!-- CODE EXCHANGE (Manual Fallback) -->
   <div class="view" id="codeView">
     <h3 id="codeTitle">📤 Код комнаты</h3>
-    
+    <p class="hint">Если Firebase не подключился, используйте ручную передачу.</p>
+
     <div id="creatorStep">
       <p><strong>1️⃣ Отправьте этот код другу:</strong></p>
-      <div class="code-box" id="myCode"></div>
-      <div class="code-row">
-        <button class="btn small secondary" id="copyCode">📋 Копировать</button>
-        <button class="btn small secondary" id="shareCode">📤 Поделиться</button>
+      <div class="code-box" id="offerCode"></div>
+      <div class="flex-row">
+        <button class="btn small secondary" onclick="copyToClipboard('offerCode')">📋 Копировать</button>
+        <button class="btn small secondary" onclick="shareText('offerCode')">📤 Поделиться</button>
       </div>
-      
       <p class="mt-2"><strong>2️⃣ Вставьте ответ друга:</strong></p>
-      <input type="text" id="partnerAnswer" class="code-input" placeholder="Вставьте ответ...">
-      <div class="code-row">
-        <button class="btn" id="connectBtn">✅ Подключить</button>
-        <button class="btn danger" id="cancelCreate">❌ Отмена</button>
+      <textarea id="answerInput" rows="3" placeholder="Вставьте ответ..."></textarea>
+      <div class="flex-row">
+        <button class="btn" onclick="completeManualConnection()">✅ Подключить</button>
+        <button class="btn danger" onclick="goHome()">❌ Отмена</button>
       </div>
-      <p class="hint">💡 Совет: код можно отправить через мессенджер, email или QR.</p>
     </div>
 
     <div id="joinerStep" class="hidden">
       <p><strong>1️⃣ Вставьте код комнаты:</strong></p>
-      <input type="text" id="partnerCode" class="code-input" placeholder="Вставьте код...">
-      <button class="btn" id="generateAnswer">🔗 Сгенерировать ответ</button>
+      <textarea id="offerInput" rows="3" placeholder="Вставьте код..."></textarea>
+      <button class="btn" onclick="generateManualAnswer()">🔗 Сгенерировать ответ</button>
       
       <p class="mt-2"><strong>2️⃣ Отправьте этот ответ создателю:</strong></p>
-      <div class="code-box" id="myAnswer"></div>
-      <div class="code-row">
-        <button class="btn small secondary" id="copyAnswer">📋 Копировать</button>
-        <button class="btn small secondary" id="shareAnswer">📤 Поделиться</button>
+      <div class="code-box" id="answerCode"></div>
+      <div class="flex-row">
+        <button class="btn small secondary" onclick="copyToClipboard('answerCode')"> Копировать</button>
+        <button class="btn small secondary" onclick="shareText('answerCode')">📤 Поделиться</button>
       </div>
-      
-      <button class="btn danger mt-2" id="cancelJoin">❌ Отмена</button>
+      <button class="btn danger mt-2" onclick="goHome()">❌ Отмена</button>
     </div>
   </div>
 
-  <div class="view" id="chatView">
+  <!-- CHAT -->
+  <div class="view" id="chatView" style="padding:0;">
     <div class="chat-messages" id="chatMessages">
-      <div class="message system">🔒 Все сообщения передаются напрямую (P2P). Сервер не используется.</div>
+      <div class="msg system">🔒 Соединение устанавливается...</div>
     </div>
-    <div class="chat-input">
-      <button class="file-btn" id="fileBtn">📎</button>
-      <input type="text" id="messageInput" placeholder="Введите сообщение..." autocomplete="off">
-      <button class="send-btn" id="sendBtn">➤</button>
+    <div class="input-bar">
+      <button class="icon-btn" onclick="document.getElementById('fileInput').click()">📎</button>
+      <input type="text" id="msgInput" placeholder="Сообщение..." onkeypress="handleKey(event)">
+      <button class="icon-btn send-btn" onclick="sendMessage()">➤</button>
     </div>
-    <input type="file" id="fileInput" multiple>
+    <input type="file" id="fileInput" onchange="handleFileSelect(this)">
   </div>
 
+  <!-- LOGS -->
   <div class="view" id="logsView">
-    <h3>🐞 Логи</h3>
-    <div class="logs" id="logs"></div>
-    <button class="btn small secondary mt-2" onclick="document.getElementById('logs').innerHTML=''">🗑️ Очистить</button>
+    <h3>🐞 Системные логи</h3>
+    <div class="logs" id="logsBox"></div>
+    <div class="flex-row mt-2">
+      <button class="btn small secondary" onclick="goHome()"> Назад</button>
+      <button class="btn small secondary" onclick="exportLogs()"> Экспорт</button>
+      <button class="btn small danger" onclick="clearLogs()">🗑️ Очистить</button>
+    </div>
   </div>
 
+  <!-- Firebase SDK (Compat v9) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  
   <script>
+    // ================= GLOBAL STATE =================
     let pc = null, dc = null;
-    let localDescription = null, isCreator = false;
-    let currentChatId = null, firebaseRef = null;
-    let wakeLock = null;
-    let heartbeatTimer = null, lastPong = Date.now();
-    let reconnectAttempts = 0, maxReconnectAttempts = 3;
-    let deviceId = localStorage.getItem('fc_device_id') || crypto.randomUUID();
-    let useFirebase = false, firebaseApp = null, firebaseDb = null;
-    let autoConnectListener = null;
+    let roomId = null, isCreator = false;
+    let firebaseApp = null, dbRef = null;
+    let useFirebase = true, firebaseConnected = false;
+    let wakeLock = null, heartBeatTimer = null, lastPong = Date.now();
+    let reconnectAttempts = 0, maxReconnectAttempts = 4;
+    let fileBuffer = null, fileMeta = null, fileChunkIndex = 0;
+    const CHUNK_SIZE = 16000; // ~16KB chunks for reliability
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+    const FIREBASE_CONFIG_KEY = 'fc_firebase_config';
+    const CHAT_HISTORY_KEY = 'fc_history';
+    const DEVICE_ID_KEY = 'fc_device_id';
     
-    localStorage.setItem('fc_device_id', deviceId);
+    const deviceId = localStorage.getItem(DEVICE_ID_KEY) || crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
 
-    const PC_CONFIG = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ],
-      iceCandidatePoolSize: 10,
-      iceTransportPolicy: 'all',
-      bundlePolicy: 'max-bundle',
-      rtcpMuxPolicy: 'require'
-    };
+    // ================= INIT =================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedConfig();
+      renderSavedChats();
+      setupVisibilityAPI();
+      addSystemMsg('Добро пожаловать в FireChat P2P. Все данные передаются напрямую между устройствами.');
+      log(' App initialized. Device ID: ' + deviceId.substring(0,8));
+    });
 
-    const views = {
-      menu: document.getElementById('menuView'),
-      code: document.getElementById('codeView'),
-      chat: document.getElementById('chatView'),
-      logs: document.getElementById('logsView')
-    };
-    const statusEl = document.getElementById('status');
-    const modeIndicator = document.getElementById('modeIndicator');
-    const backBtn = document.getElementById('backBtn');
-    const chatMessages = document.getElementById('chatMessages');
-    const messageInput = document.getElementById('messageInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const fileBtn = document.getElementById('fileBtn');
-    const fileInput = document.getElementById('fileInput');
-    const logsEl = document.getElementById('logs');
-    const firebaseToggle = document.getElementById('firebaseToggle');
-    const firebaseConfigBlock = document.getElementById('firebaseConfigBlock');
+    document.getElementById('firebaseToggle').addEventListener('change', (e) => {
+      useFirebase = e.target.checked;
+      document.getElementById('firebaseConfigBox').classList.toggle('hidden', !useFirebase);
+      log(`🔥 Firebase режим: ${useFirebase ? 'ВКЛ' : 'ВЫКЛ (Ручной)'}`);
+      if (!useFirebase && firebaseApp) { cleanupFirebase(); }
+    });
 
+    // ================= NAVIGATION & UI =================
+    function switchView(viewId) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if (viewId === 'chatView') requestWakeLock();
+      else releaseWakeLock();
+    }
+    function goHome() { cleanup(); switchView('menuView'); updateStatus('offline', 'Оффлайн'); }
+    function showLogs() { switchView('logsView'); }
+    function clearLogs() { document.getElementById('logsBox').innerText = ''; log('🗑️ Логи очищены'); }
+    function exportLogs() {
+      const blob = new Blob([document.getElementById('logsBox').innerText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `firechat-logs-${Date.now()}.txt`;
+      a.click(); URL.revokeObjectURL(url);
+    }
+    function clearAllData() {
+      if (confirm('Удалить все сохранённые данные?')) {
+        localStorage.clear(); location.reload();
+      }
+    }
+    function updateStatus(status, text) {
+      const badge = document.getElementById('statusBadge');
+      badge.className = `status-badge ${status}`;
+      badge.innerText = text;
+    }
+    function addMsg(text, type = 'received', html = false) {
+      const div = document.createElement('div');
+      div.className = `msg ${type}`;
+      div.innerHTML = `${html ? text : escapeHtml(text)}<div class="meta"><span>${type === 'sent' ? 'Вы' : 'Собеседник'}</span><span>${new Date().toLocaleTimeString()}</span></div>`;
+      document.getElementById('chatMessages').appendChild(div);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+    function addSystemMsg(text) {
+      const div = document.createElement('div'); div.className = 'msg system'; div.innerText = text;
+      document.getElementById('chatMessages').appendChild(div);
+      document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    }
+    function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
     function log(msg) {
       console.log(msg);
-      logsEl.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${escapeHtml(msg)}</div>`;
-      logsEl.scrollTop = logsEl.scrollHeight;
+      document.getElementById('logsBox').innerText += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+      document.getElementById('logsBox').scrollTop = document.getElementById('logsBox').scrollHeight;
+    }
+    function copyToClipboard(elId) {
+      const text = document.getElementById(elId).innerText;
+      navigator.clipboard.writeText(text).then(() => log('📋 Скопировано в буфер')).catch(() => alert('Не удалось скопировать'));
+    }
+    function shareText(elId) {
+      const text = document.getElementById(elId).innerText;
+      if (navigator.share) navigator.share({ title: 'FireChat P2P', text }).catch(() => {});
+      else copyToClipboard(elId);
     }
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
-    }
-
-    function compress(str) {
-      return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
-    function decompress(str) {
-      str = str.replace(/-/g, '+').replace(/_/g, '/');
-      while (str.length % 4) str += '=';
-      return decodeURIComponent(escape(atob(str)));
-    }
-
-    function showView(name) {
-      Object.values(views).forEach(v => v.classList.remove('active'));
-      views[name].classList.add('active');
-      backBtn.classList.toggle('hidden', name === 'menu');
-    }
-
-    function updateStatus(state, text) {
-      statusEl.className = `status ${state}`;
-      statusEl.textContent = text;
-    }
-
-    function addMessage(text, own = false, system = false) {
-      const div = document.createElement('div');
-      div.className = `message ${own ? 'own' : ''} ${system ? 'system' : ''}`;
-      div.innerHTML = `<div>${escapeHtml(text)}</div><div class="meta">${new Date().toLocaleTimeString()}</div>`;
-      chatMessages.appendChild(div);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // Firebase
+    // ================= FIREBASE =================
     async function initFirebase(configJson) {
       if (!configJson) return false;
       try {
-        let config;
-        try { config = JSON.parse(configJson); }
-        catch { return false; }
-        
-        if (typeof firebase === 'undefined') {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
-        
-        firebaseApp = firebase.initializeApp(config, 'firechat-' + Date.now());
-        firebaseDb = firebase.database();
-        log('🔥 Firebase инициализирован');
+        const config = JSON.parse(configJson);
+        firebaseApp = firebase.initializeApp(config, `fc-${Date.now()}`);
+        dbRef = firebase.database().ref(`firechat/${roomId}`);
+        firebaseConnected = true;
+        log('🔥 Firebase подключён');
         return true;
       } catch (e) {
         log('❌ Firebase ошибка: ' + e.message);
+        firebaseConnected = false;
         return false;
       }
     }
+    function cleanupFirebase() {
+      if (firebaseApp) { firebaseApp.delete(); firebaseApp = null; }
+      dbRef = null; firebaseConnected = false;
+      log('🔥 Firebase отключён');
+    }
+    function saveFirebaseConfig() {
+      const val = document.getElementById('firebaseConfigInput').value.trim();
+      if (!val) return alert('Введите JSON конфигурацию');
+      try {
+        JSON.parse(val);
+        localStorage.setItem(FIREBASE_CONFIG_KEY, val);
+        alert('✅ Конфигурация сохранена!');
+        if (useFirebase) initFirebase(val);
+      } catch(e) { alert('❌ Неверный формат JSON'); }
+    }
+    function loadSavedConfig() {
+      const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+      if (saved) {
+        document.getElementById('firebaseConfigInput').value = saved;
+        if (useFirebase) initFirebase(saved);
+      }
+    }
 
-    // WebRTC
-    function makePC() {
-      pc = new RTCPeerConnection(PC_CONFIG);
-      
+    // ================= WEBRTC CORE =================
+    function createPeerConnection() {
+      pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all',
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require'
+      });
+
       pc.oniceconnectionstatechange = () => {
-        log(`🧊 ICE: ${pc.iceConnectionState}`);
+        log(`🧊 ICE State: ${pc.iceConnectionState}`);
         if (pc.iceConnectionState === 'connected') {
-          updateStatus('connected', 'Онлайн');
+          updateStatus('online', 'Онлайн');
+          addSystemMsg('🎉 Соединение установлено! Можно общаться.');
+          switchView('chatView');
+          startHeartbeat();
+          saveChatToHistory(roomId, isCreator);
+          if (useFirebase && dbRef) dbRef.remove().catch(() => {});
         }
         if (['disconnected', 'failed'].includes(pc.iceConnectionState)) {
           handleDisconnect();
         }
       };
 
-      pc.onicecandidate = (e) => {
-        if (e.candidate) log(`🧊 Новый кандидат`);
-      };
-
+      pc.onicegatheringstatechange = () => log(` ICE Gathering: ${pc.iceGatheringState}`);
       pc.ondatachannel = (e) => setupDataChannel(e.channel);
       return pc;
     }
@@ -353,270 +379,325 @@
     function setupDataChannel(channel) {
       dc = channel;
       dc.binaryType = 'arraybuffer';
-
-      dc.onopen = () => {
-        log('✅ DataChannel открыт');
-        updateStatus('connected', 'Онлайн');
-        startHeartbeat();
-        addMessage('🎉 Соединение установлено!', false, true);
-      };
-
+      dc.onopen = () => { log('✅ DataChannel открыт'); startHeartbeat(); };
       dc.onclose = () => { log('❌ DataChannel закрыт'); handleDisconnect(); };
-      dc.onerror = (e) => { log('⚠️ DataChannel ошибка'); };
-
-      dc.onmessage = async (e) => {
+      dc.onerror = (e) => log('⚠️ DataChannel ошибка: ' + (e.error?.message || e));
+      
+      dc.onmessage = (e) => {
         lastPong = Date.now();
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === 'ping') { dc.send(JSON.stringify({ type: 'pong' })); return; }
-          if (msg.type === 'pong') return;
-          if (msg.text) addMessage(msg.text);
-        } catch (err) { addMessage(e.data); }
+        if (typeof e.data === 'string') {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.type === 'ping') { dc.send(JSON.stringify({ type: 'pong' })); return; }
+            if (msg.type === 'pong') return;
+            if (msg.type === 'text') { addMsg(msg.content, 'received'); return; }
+            if (msg.type === 'file_meta') {
+              fileMeta = msg; fileBuffer = new Uint8Array(msg.size); fileChunkIndex = 0;
+              log(`📥 Ожидание файла: ${msg.name} (${msg.size} байт)`);
+              return;
+            }
+          } catch(err) { log('⚠️ Parse error: ' + err.message); }
+        } else {
+          // Binary chunk
+          if (!fileMeta) return;
+          const chunk = new Uint8Array(e.data);
+          fileBuffer.set(chunk, fileChunkIndex * CHUNK_SIZE);
+          fileChunkIndex++;
+          if (fileChunkIndex * CHUNK_SIZE >= fileMeta.size) {
+            const blob = new Blob([fileBuffer], { type: fileMeta.mime });
+            const url = URL.createObjectURL(blob);
+            const isImage = fileMeta.mime.startsWith('image/');
+            const link = `<a href="${url}" download="${escapeHtml(fileMeta.name)}">${escapeHtml(fileMeta.name)}</a>`;
+            addMsg(isImage ? `${link}<br><img src="${url}" onclick="window.open(this.src)">` : link, 'received', true);
+            fileMeta = null; fileBuffer = null; fileChunkIndex = 0;
+            log('📥 Файл получен');
+          }
+        }
       };
     }
 
-    async function waitIce(pc, timeout = 8000) {
-      if (pc.iceGatheringState === 'complete') return;
+    // ================= SIGNALING FLOW =================
+    async function startChat(mode) {
+      if (useFirebase && !firebaseConnected) {
+        const saved = localStorage.getItem(FIREBASE_CONFIG_KEY);
+        if (!saved) { alert('Введите Firebase Config или отключите авто-режим'); return; }
+        if (!await initFirebase(saved)) return;
+      }
+
+      roomId = mode === 'create' ? 'room_' + crypto.randomUUID().substring(0, 8) : prompt('Введите ID комнаты:');
+      if (!roomId) return;
+      isCreator = (mode === 'create');
+      createPeerConnection();
+
+      if (isCreator) {
+        await createOffer();
+      } else {
+        document.getElementById('codeTitle').innerText = ' Присоединение';
+        document.getElementById('creatorStep').classList.add('hidden');
+        document.getElementById('joinerStep').classList.remove('hidden');
+        switchView('codeView');
+        if (useFirebase) listenForOffer();
+      }
+    }
+
+    async function createOffer() {
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await waitForIceGathering(pc, 5000);
+
+        const candidates = [];
+        pc.onicecandidate = (e) => { if (e.candidate) candidates.push(e.candidate); };
+        
+        const packet = {
+          type: 'offer',
+          sdp: pc.localDescription.sdp,
+          candidates: candidates,
+          creator: deviceId,
+          ts: Date.now()
+        };
+
+        if (useFirebase && dbRef) {
+          log('📤 Отправка Offer в Firebase...');
+          await dbRef.set(packet);
+          listenForAnswer();
+        } else {
+          log('📤 Offer создан (ручной режим)');
+          document.getElementById('offerCode').innerText = btoa(JSON.stringify(packet));
+          switchView('codeView');
+        }
+      } catch (e) { log('❌ createOffer: ' + e.message); alert('Ошибка создания offer'); }
+    }
+
+    async function listenForAnswer() {
+      if (!dbRef) return;
+      dbRef.on('value', async (snapshot) => {
+        const val = snapshot.val();
+        if (val && val.type === 'answer') {
+          log('📥 Answer получен через Firebase');
+          dbRef.off();
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: val.sdp }));
+            for (const c of (val.candidates || [])) await pc.addIceCandidate(c);
+          } catch(e) { log(' setRemoteDescription: ' + e.message); }
+        }
+      });
+    }
+
+    async function listenForOffer() {
+      if (!dbRef) return;
+      dbRef.on('value', async (snapshot) => {
+        const val = snapshot.val();
+        if (val && val.type === 'offer') {
+          log('📥 Offer получен через Firebase');
+          dbRef.off();
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: val.sdp }));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGathering(pc, 5000);
+            
+            const ansCandidates = [];
+            pc.onicecandidate = (e) => { if (e.candidate) ansCandidates.push(e.candidate); };
+
+            await dbRef.set({
+              type: 'answer',
+              sdp: pc.localDescription.sdp,
+              candidates: ansCandidates,
+              joiner: deviceId,
+              ts: Date.now()
+            });
+            log(' Answer отправлен в Firebase');
+            addSystemMsg('Ожидание подключения...');
+          } catch(e) { log(' Answer flow: ' + e.message); }
+        }
+      });
+    }
+
+    async function generateManualAnswer() {
+      const raw = document.getElementById('offerInput').value.trim();
+      if (!raw) return alert('Вставьте код комнаты!');
+      try {
+        const packet = JSON.parse(atob(raw));
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: packet.sdp }));
+        if (packet.candidates) for (const c of packet.candidates) await pc.addIceCandidate(c);
+        
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await waitForIceGathering(pc, 5000);
+        
+        const ansCandidates = [];
+        pc.onicecandidate = (e) => { if (e.candidate) ansCandidates.push(e.candidate); };
+        
+        const ansPacket = { type: 'answer', sdp: pc.localDescription.sdp, candidates: ansCandidates, ts: Date.now() };
+        document.getElementById('answerCode').innerText = btoa(JSON.stringify(ansPacket));
+        document.getElementById('joinerStep').querySelector('.btn.danger').style.display = 'none';
+        addSystemMsg('Скопируйте ответ и отправьте создателю');
+      } catch(e) { alert('Ошибка: ' + e.message); }
+    }
+
+    async function completeManualConnection() {
+      const raw = document.getElementById('answerInput').value.trim();
+      if (!raw) return alert('Вставьте ответ!');
+      try {
+        const packet = JSON.parse(atob(raw));
+        await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: packet.sdp }));
+        if (packet.candidates) for (const c of packet.candidates) await pc.addIceCandidate(c);
+        log('✅ Ручное подключение завершено');
+        switchView('chatView');
+      } catch(e) { alert('Ошибка: ' + e.message); }
+    }
+
+    function waitForIceGathering(pc, timeout = 5000) {
+      if (pc.iceGatheringState === 'complete') return Promise.resolve();
       return Promise.race([
         new Promise(res => {
-          const check = () => {
-            if (pc.iceGatheringState === 'complete') {
-              pc.removeEventListener('icegatheringstatechange', check);
-              res();
-            }
-          };
+          const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); res(); } };
           pc.addEventListener('icegatheringstatechange', check);
         }),
         new Promise(res => setTimeout(res, timeout))
       ]);
     }
 
+    // ================= MESSAGING & FILES =================
+    function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text || !dc || dc.readyState !== 'open') return;
+      dc.send(JSON.stringify({ type: 'text', content: text }));
+      addMsg(text, 'sent');
+      input.value = '';
+    }
+    function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+    async function handleFileSelect(input) {
+      const file = input.files[0];
+      if (!file || !dc || dc.readyState !== 'open') return;
+      if (file.size > MAX_FILE_SIZE) return alert(`Файл слишком большой. Макс: ${MAX_FILE_SIZE/1024/1024} МБ`);
+      
+      log(`📤 Отправка файла: ${file.name} (${file.size} байт)`);
+      dc.send(JSON.stringify({ type: 'file_meta', name: file.name, size: file.size, mime: file.type }));
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const buffer = new Uint8Array(e.target.result);
+        let offset = 0;
+        const sendChunk = () => {
+          if (offset >= buffer.length) { log('✅ Файл отправлен'); return; }
+          const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+          dc.send(chunk);
+          offset += CHUNK_SIZE;
+          setTimeout(sendChunk, 50); // Throttle for stability
+        };
+        sendChunk();
+      };
+      reader.readAsArrayBuffer(file);
+      input.value = '';
+    }
+
+    // ================= STABILITY & SYSTEM =================
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try { wakeLock = await navigator.wakeLock.request('screen'); log('🔒 Wake Lock активирован'); } catch(e) {}
+      }
+    }
+    function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
+
     function startHeartbeat() {
       stopHeartbeat();
       lastPong = Date.now();
-      heartbeatTimer = setInterval(() => {
+      heartBeatTimer = setInterval(() => {
         if (dc?.readyState === 'open') {
-          if (Date.now() - lastPong > 10000) {
-            log('💔 Heartbeat timeout');
-            handleDisconnect();
-          } else {
-            dc.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
-          }
+          if (Date.now() - lastPong > 12000) { log('💔 Heartbeat timeout'); handleDisconnect(); }
+          else dc.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
         }
       }, 3000);
     }
-
-    function stopHeartbeat() {
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
-    }
+    function stopHeartbeat() { if (heartBeatTimer) { clearInterval(heartBeatTimer); heartBeatTimer = null; } }
 
     async function handleDisconnect() {
+      if (pc?.iceConnectionState === 'connected') return;
       updateStatus('reconnecting', 'Переподключение...');
       stopHeartbeat();
       
       if (reconnectAttempts >= maxReconnectAttempts) {
-        addMessage('⚠️ Не удалось восстановить соединение.', false, true);
-        cleanup();
-        showView('menu');
-        return;
+        addSystemMsg('⚠️ Не удалось восстановить соединение. Создайте новый чат.');
+        cleanup(); goHome(); return;
       }
       
       reconnectAttempts++;
       log(`🔄 Попытка ${reconnectAttempts}/${maxReconnectAttempts}`);
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 4000 + reconnectAttempts * 1000));
       
-      if (pc?.iceConnectionState === 'connected') {
-        updateStatus('connected', 'Онлайн');
-        startHeartbeat();
-        return;
-      }
+      if (pc?.iceConnectionState === 'connected') { updateStatus('online', 'Онлайн'); startHeartbeat(); return; }
       
       try {
         if (isCreator) {
           const offer = await pc.createOffer({ iceRestart: true });
           await pc.setLocalDescription(offer);
-          await waitIce(pc);
-          localDescription = JSON.stringify(pc.localDescription);
-          const newCode = compress(JSON.stringify({ 
-            id: currentChatId, 
-            offer: localDescription, 
-            creator: deviceId, 
-            restart: true 
-          }));
-          addMessage(`🔄 Новый код:\n${newCode}`, false, true);
-          navigator.clipboard?.writeText(newCode);
+          await waitForIceGathering(pc, 5000);
+          if (useFirebase && dbRef) {
+            await dbRef.update({ type: 'offer_restart', sdp: pc.localDescription.sdp, ts: Date.now() });
+            log('🔄 ICE Restart отправлен через Firebase');
+          } else {
+            addSystemMsg('🔄 Запросите новый код у создателя');
+          }
         } else {
-          addMessage('🔄 Запросите новый код у создателя', false, true);
+          addSystemMsg('🔄 Ожидание переподключения...');
         }
-      } catch (e) { log('❌ ICE Restart: ' + e.message); }
+      } catch(e) { log('❌ ICE Restart: ' + e.message); }
+    }
+
+    function setupVisibilityAPI() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { log('📴 Вкладка скрыта'); stopHeartbeat(); }
+        else { 
+          log('👁️ Вкладка активна'); 
+          requestWakeLock();
+          if (dc?.readyState === 'open') startHeartbeat();
+          else handleDisconnect();
+        }
+      });
+    }
+
+    // ================= HISTORY & CLEANUP =================
+    function saveChatToHistory(id, creator) {
+      const history = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]');
+      const name = document.getElementById('usernameInput').value || 'Аноним';
+      const entry = { id, name, creator, ts: Date.now() };
+      const idx = history.findIndex(h => h.id === id);
+      if (idx >= 0) history[idx] = entry; else history.unshift(entry);
+      localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+      renderSavedChats();
+    }
+    function renderSavedChats() {
+      const history = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]');
+      const list = document.getElementById('savedChatsList');
+      if (!history.length) { list.innerText = 'Нет сохранённых чатов'; return; }
+      document.getElementById('savedChatsBlock').classList.remove('hidden');
+      list.innerHTML = history.map(h => 
+        `<div style="padding:8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <span>${escapeHtml(h.name)} • ${h.id}</span>
+          <button class="btn small secondary" onclick="quickJoin('${h.id}')">🔗</button>
+        </div>`
+      ).join('');
+    }
+    function quickJoin(id) {
+      if (useFirebase) { roomId = id; createPeerConnection(); listenForOffer(); switchView('chatView'); }
+      else { document.getElementById('offerInput').value = id; startChat('join'); }
     }
 
     function cleanup() {
-      stopHeartbeat();
-      if (dc) { dc.close(); dc = null; }
-      if (pc) { pc.close(); pc = null; }
-      localDescription = null;
-      reconnectAttempts = 0;
+      stopHeartbeat(); releaseWakeLock();
+      if (dc) { try { dc.close(); } catch(e) {} dc = null; }
+      if (pc) { try { pc.close(); } catch(e) {} pc = null; }
+      cleanupFirebase();
+      reconnectAttempts = 0; fileMeta = null; fileBuffer = null;
     }
-
-    // Ручной режим
-    async function createOffer() {
-      isCreator = true;
-      pc = makePC();
-      dc = pc.createDataChannel('chat', { ordered: true });
-      setupDataChannel(dc);
-      
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await waitIce(pc);
-      
-      localDescription = JSON.stringify(pc.localDescription);
-      const code = compress(JSON.stringify({ 
-        id: crypto.randomUUID().substring(0, 8), 
-        offer: localDescription, 
-        creator: deviceId 
-      }));
-      
-      document.getElementById('myCode').textContent = code;
-      currentChatId = code;
-      showView('code');
-      log('📤 Offer создан');
-    }
-
-    async function generateAnswer() {
-      const code = document.getElementById('partnerCode').value.trim();
-      if (!code) return alert('Вставьте код комнаты');
-      
-      try {
-        const data = JSON.parse(decompress(code));
-        if (!data.offer) throw new Error('Неверный формат');
-        
-        isCreator = false;
-        pc = makePC();
-        pc.ondatachannel = (e) => setupDataChannel(e.channel);
-        
-        await pc.setRemoteDescription(JSON.parse(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        await waitIce(pc);
-        
-        const answerCode = compress(JSON.stringify({ 
-          answer: JSON.stringify(pc.localDescription), 
-          chatId: data.id 
-        }));
-        document.getElementById('myAnswer').textContent = answerCode;
-        document.getElementById('creatorStep').classList.add('hidden');
-        document.getElementById('joinerStep').classList.remove('hidden');
-        currentChatId = code;
-        log('📥 Answer создан');
-      } catch (e) { alert('Ошибка: ' + e.message); }
-    }
-
-    async function connectWithAnswer() {
-      const answerStr = document.getElementById('partnerAnswer').value.trim();
-      if (!answerStr || !pc) return alert('Вставьте ответ');
-      
-      try {
-        const answerData = JSON.parse(decompress(answerStr));
-        await pc.setRemoteDescription(JSON.parse(answerData.answer));
-        await waitIce(pc);
-        showView('chat');
-        log('✅ Подключено!');
-      } catch (e) { alert('Ошибка: ' + e.message); }
-    }
-
-    // Отправка
-    function sendMessage() {
-      const text = messageInput.value.trim();
-      if (!text || dc?.readyState !== 'open') return;
-      dc.send(JSON.stringify({ text }));
-      addMessage(text, true);
-      messageInput.value = '';
-    }
-
-    // Event listeners
-    backBtn.onclick = () => { cleanup(); showView('menu'); };
-    
-    firebaseToggle.onchange = (e) => {
-      firebaseConfigBlock.classList.toggle('hidden', !e.target.checked);
-      if (e.target.checked) {
-        const saved = localStorage.getItem('fc_firebase_config');
-        if (saved) {
-          useFirebase = true;
-          initFirebase(saved).then(ok => {
-            modeIndicator.className = `mode-indicator ${ok ? 'auto' : 'manual'}`;
-            modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим (ошибка)';
-          });
-        }
-      } else {
-        useFirebase = false;
-        modeIndicator.className = 'mode-indicator manual';
-        modeIndicator.textContent = '🟡 Ручной режим (без Firebase)';
-      }
-    };
-    
-    document.getElementById('saveFirebaseConfig').onclick = async () => {
-      const config = document.getElementById('firebaseConfigInput').value.trim();
-      if (!config) return alert('Введите конфигурацию');
-      
-      const ok = await initFirebase(config);
-      if (ok) {
-        localStorage.setItem('fc_firebase_config', config);
-        useFirebase = true;
-        modeIndicator.className = 'mode-indicator auto';
-        modeIndicator.textContent = '🟢 Авто-режим (Firebase)';
-        alert('✅ Firebase подключён!');
-      } else {
-        alert('❌ Ошибка Firebase. Проверьте JSON.');
-      }
-    };
-    
-    document.getElementById('createBtn').onclick = createOffer;
-    document.getElementById('joinBtn').onclick = () => showView('code');
-    
-    document.getElementById('copyCode').onclick = () => 
-      navigator.clipboard.writeText(document.getElementById('myCode').textContent);
-    document.getElementById('shareCode').onclick = () => {
-      const code = document.getElementById('myCode').textContent;
-      if (navigator.share) navigator.share({ text: `FireChat: ${code}` });
-      else navigator.clipboard.writeText(code);
-    };
-    
-    document.getElementById('connectBtn').onclick = connectWithAnswer;
-    document.getElementById('cancelCreate').onclick = () => { cleanup(); showView('menu'); };
-    
-    document.getElementById('generateAnswer').onclick = generateAnswer;
-    document.getElementById('copyAnswer').onclick = () => 
-      navigator.clipboard.writeText(document.getElementById('myAnswer').textContent);
-    document.getElementById('cancelJoin').onclick = () => { cleanup(); showView('menu'); };
-    
-    sendBtn.onclick = sendMessage;
-    messageInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-    
-    fileBtn.onclick = () => fileInput.click();
-    fileInput.onchange = (e) => { fileInput.value = ''; };
-    
-    document.getElementById('showLogsBtn').onclick = () => showView('logs');
 
     // Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
-    }
-
-    // Init
-    log('🚀 FireChat запущен');
-    updateStatus('disconnected', 'Не подключено');
-    
-    // Проверяем сохранённый Firebase
-    const savedFirebase = localStorage.getItem('fc_firebase_config');
-    if (savedFirebase) {
-      firebaseToggle.checked = true;
-      firebaseConfigBlock.classList.remove('hidden');
-      initFirebase(savedFirebase).then(ok => {
-        useFirebase = ok;
-        modeIndicator.className = `mode-indicator ${ok ? 'auto' : 'manual'}`;
-        modeIndicator.textContent = ok ? '🟢 Авто-режим (Firebase)' : '🟡 Ручной режим';
-      });
+      navigator.serviceWorker.register('/sw.js').catch(e => log('⚠️ SW error: ' + e.message));
     }
   </script>
 </body>
