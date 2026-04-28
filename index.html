@@ -2,728 +2,356 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a84ff">
   <title>🔐 FireChat P2P</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#0a84ff">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #0f0f0f; --surface: #1a1a1a; --primary: #0a84ff;
-      --text: #fff; --text-dim: #aaa; --danger: #ff453a;
-      --success: #30d158; --border: #333;
-    }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg); color: var(--text);
-      display: flex; flex-direction: column; height: 100vh;
-      overflow: hidden;
-    }
-    header {
-      padding: 12px 16px; background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
-      position: sticky; top: 0; z-index: 10;
-    }
-    .status {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--danger); transition: background 0.3s;
-    }
-    .status.online { background: var(--success); }
-    .status.connecting { background: #ff9f0a; }
-    #headerTitle { font-weight: 600; flex: 1; }
-    #connectionInfo { font-size: 12px; color: var(--text-dim); }
-    #chat {
-      flex: 1; overflow-y: auto; padding: 16px;
-      display: flex; flex-direction: column; gap: 8px;
-      scroll-behavior: smooth;
-    }
-    .message {
-      max-width: 80%; padding: 10px 14px;
-      border-radius: 18px; line-height: 1.4;
-      position: relative; word-wrap: break-word;
-    }
-    .message.sent {
-      align-self: flex-end; background: var(--primary);
-      border-bottom-right-radius: 4px;
-    }
-    .message.received {
-      align-self: flex-start; background: var(--surface);
-      border-bottom-left-radius: 4px;
-    }
-    .message .meta {
-      font-size: 11px; color: var(--text-dim);
-      margin-top: 4px; display: flex; justify-content: space-between;
-      gap: 8px;
-    }
-    .message img {
-      max-width: 100%; border-radius: 12px;
-      display: block; margin: 4px 0;
-    }
-    .message .file-info {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.1);
-      padding: 8px 12px; border-radius: 8px;
-      margin: 4px 0;
-    }
-    .message .file-info a {
-      color: var(--primary); text-decoration: none;
-    }
-    #inputArea {
-      padding: 12px 16px; background: var(--surface);
-      border-top: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
-    }
-    #fileBtn, #sendBtn {
-      width: 40px; height: 40px; border-radius: 50%;
-      border: none; background: var(--primary);
-      color: white; font-size: 18px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: opacity 0.2s;
-    }
-    #fileBtn { background: #5e5ce6; }
-    #sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-    #messageInput {
-      flex: 1; padding: 12px 16px; border-radius: 24px;
-      border: 1px solid var(--border); background: var(--bg);
-      color: var(--text); font-size: 16px; outline: none;
-    }
-    #messageInput::placeholder { color: var(--text-dim); }
-    .screen {
-      position: absolute; inset: 0; background: var(--bg);
-      padding: 24px; display: none; flex-direction: column;
-      gap: 20px; overflow-y: auto; z-index: 20;
-    }
-    .screen.active { display: flex; }
-    .screen h2 { margin-bottom: 8px; }
-    .screen p { color: var(--text-dim); line-height: 1.5; }
-    .code-box {
-      background: var(--surface); padding: 16px;
-      border-radius: 12px; font-family: monospace;
-      word-break: break-all; border: 1px solid var(--border);
-      user-select: all;
-    }
-    .btn {
-      padding: 12px 20px; border-radius: 10px; border: none;
-      background: var(--primary); color: white; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; gap: 8px;
-      justify-content: center;
-    }
-    .btn.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
-    .btn.danger { background: var(--danger); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; }
-    .row > * { flex: 1; min-width: 120px; }
-    #nameModal {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-      display: none; align-items: center; justify-content: center;
-      z-index: 100; padding: 24px;
-    }
-    #nameModal.active { display: flex; }
-    #nameModal .content {
-      background: var(--surface); padding: 24px;
-      border-radius: 16px; width: 100%; max-width: 400px;
-    }
-    #nameModal input {
-      width: 100%; padding: 12px; margin: 16px 0;
-      border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg); color: var(--text); font-size: 16px;
-    }
-    #logs {
-      position: fixed; bottom: 80px; right: 16px;
-      width: 300px; max-height: 200px; overflow-y: auto;
-      background: rgba(26,26,26,0.95); padding: 12px;
-      border-radius: 8px; font-size: 11px; font-family: monospace;
-      display: none; z-index: 15; border: 1px solid var(--border);
-    }
-    #logs.active { display: block; }
-    #logs .entry { margin: 2px 0; color: var(--text-dim); }
-    #logs .entry.error { color: var(--danger); }
-    #logs .entry.success { color: var(--success); }
-    #fileInput { display: none; }
-    .typing {
-      font-size: 12px; color: var(--text-dim);
-      padding: 4px 16px; font-style: italic;
-    }
-    @media (max-width: 480px) {
-      .message { max-width: 90%; }
-      #logs { width: calc(100% - 32px); right: 16px; left: 16px; }
-    }
+    :root { --bg: #0f0f0f; --surface: #1a1a1a; --primary: #0a84ff; --text: #e5e5e5; --text-dim: #888; --border: #333; --radius: 12px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    .container { flex: 1; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; padding: 16px; }
+    header { text-align: center; padding: 20px 0; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 24px; }
+    .btn { background: var(--primary); color: #fff; border: none; padding: 14px; border-radius: var(--radius); font-size: 16px; font-weight: 500; cursor: pointer; width: 100%; margin-bottom: 12px; transition: opacity 0.2s; }
+    .btn:active { opacity: 0.8; }
+    .btn.secondary { background: var(--surface); border: 1px solid var(--border); }
+    .card { background: var(--surface); padding: 16px; border-radius: var(--radius); margin-bottom: 16px; border: 1px solid var(--border); }
+    .code-area { width: 100%; height: 80px; background: #111; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: monospace; resize: none; margin: 10px 0; }
+    .row { display: flex; gap: 8px; margin-top: 8px; }
+    .row button { flex: 1; }
+    .hidden { display: none !important; }
+    #chat-screen { display: flex; flex-direction: column; height: 100%; }
+    #status-bar { padding: 8px 16px; font-size: 13px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    #status-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; margin-right: 6px; display: inline-block; }
+    #status-bar .dot.online { background: #34c759; }
+    #messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 15px; word-break: break-word; }
+    .msg.sent { background: var(--primary); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg.received { background: var(--surface); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg img { max-width: 100%; border-radius: 12px; margin-top: 6px; display: block; }
+    #typing-indicator { font-size: 12px; color: var(--text-dim); padding: 0 12px; height: 18px; }
+    #input-bar { padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; background: var(--bg); }
+    #input-bar input { flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 24px; outline: none; }
+    #input-bar button { width: 44px; height: 44px; border-radius: 50%; background: var(--primary); border: none; color: #fff; font-size: 18px; cursor: pointer; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal-content { background: var(--surface); padding: 24px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; }
+    .modal-content input { width: 100%; padding: 12px; margin: 12px 0; background: #111; border: 1px solid var(--border); color: var(--text); border-radius: 8px; }
   </style>
 </head>
 <body>
+  <div class="container" id="app">
+    <header id="setup-screen">
+      <h1>🔐 FireChat P2P</h1>
+      <p class="subtitle">Защищённый чат без серверов. Сообщения шифруются и передаются напрямую.</p>
+      <button class="btn" onclick="UI.showCreator()">🚀 Создать чат</button>
+      <button class="btn secondary" onclick="UI.showJoiner()">🔗 Присоединиться</button>
+    </header>
 
-<div id="setupScreen" class="screen active">
-  <h2>🔐 FireChat P2P</h2>
-  <p>Защищённый чат без серверов. Сообщения шифруются и передаются напрямую.</p>
-  <div class="row">
-    <button class="btn" id="createBtn">🚀 Создать чат</button>
-    <button class="btn secondary" id="joinBtn">🔗 Присоединиться</button>
-  </div>
-  <div id="createPanel" style="display:none">
-    <h3>📤 Код комнаты</h3>
-    <p>1️⃣ Отправьте этот код другу:</p>
-    <div class="code-box" id="offerCode">Загрузка...</div>
-    <div class="row">
-      <button class="btn secondary" id="copyOffer">📋 Копировать</button>
-      <button class="btn secondary" id="shareOffer">📤 Поделиться</button>
-    </div>
-    <p style="margin-top:16px">2️⃣ Вставьте ответ друга:</p>
-    <textarea id="answerInput" placeholder="Вставьте ответ..." rows="3" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical"></textarea>
-    <button class="btn" id="connectBtn" style="margin-top:12px">✅ Подключить</button>
-    <button class="btn danger secondary" id="cancelCreate" style="margin-top:8px">❌ Отмена</button>
-  </div>
-  <div id="joinPanel" style="display:none">
-    <h3>🔗 Присоединиться</h3>
-    <p>1️⃣ Вставьте код комнаты:</p>
-    <textarea id="offerInput" placeholder="Вставьте код..." rows="3" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical"></textarea>
-    <button class="btn" id="generateAnswerBtn" style="margin-top:12px">🔗 Сгенерировать ответ</button>
-    <div id="answerPanel" style="display:none;margin-top:16px">
-      <p>2️⃣ Отправьте этот ответ создателю:</p>
-      <div class="code-box" id="answerCode">Загрузка...</div>
-      <div class="row">
-        <button class="btn secondary" id="copyAnswer">📋 Копировать</button>
-        <button class="btn secondary" id="shareAnswer">📤 Поделиться</button>
+    <div id="creator-flow" class="hidden">
+      <div class="card">
+        <h3>📤 Код комнаты</h3>
+        <p>1️⃣ Отправьте этот код другу:</p>
+        <textarea id="offer-code" class="code-area" readonly>Загрузка...</textarea>
+        <div class="row">
+          <button class="btn secondary" onclick="UI.copyCode('offer-code')">📋 Копировать</button>
+          <button class="btn" onclick="UI.shareCode('offer-code')">📤 Поделиться</button>
+        </div>
+        <hr style="border-color:var(--border); margin:16px 0;">
+        <p>2️⃣ Вставьте ответ друга:</p>
+        <textarea id="answer-input" class="code-area" placeholder="Вставьте ответ..."></textarea>
+        <div class="row">
+          <button class="btn" onclick="RTC.connectPeer()">✅ Подключить</button>
+          <button class="btn secondary" onclick="UI.reset()">❌ Отмена</button>
+        </div>
       </div>
     </div>
-    <button class="btn danger secondary" id="cancelJoin" style="margin-top:16px">❌ Отмена</button>
-  </div>
-</div>
 
-<div id="chatScreen" class="screen">
-  <header>
-    <div class="status" id="statusDot"></div>
-    <div>
-      <div id="headerTitle">FireChat P2P</div>
-      <div id="connectionInfo" style="font-size:12px">Не подключено</div>
+    <div id="joiner-flow" class="hidden">
+      <div class="card">
+        <h3>🔗 Присоединиться</h3>
+        <p>1️⃣ Вставьте код комнаты:</p>
+        <textarea id="offer-input" class="code-area" placeholder="Вставьте код создателя..."></textarea>
+        <button class="btn" onclick="RTC.generateAnswer()">🔗 Сгенерировать ответ</button>
+        <p style="margin-top:16px">2️⃣ Отправьте этот ответ создателю:</p>
+        <textarea id="answer-code" class="code-area" readonly>Загрузка...</textarea>
+        <div class="row">
+          <button class="btn secondary" onclick="UI.copyCode('answer-code')">📋 Копировать</button>
+          <button class="btn" onclick="UI.shareCode('answer-code')">📤 Поделиться</button>
+        </div>
+        <p style="margin-top:12px; font-size:13px; color:var(--text-dim)">💡 После подключения коды автоматически удаляются из памяти.</p>
+        <button class="btn secondary" onclick="UI.reset()" style="margin-top:12px">❌ Отмена</button>
+      </div>
     </div>
-    <button class="btn secondary" id="reconnectBtn" style="display:none;font-size:12px;padding:6px 12px">🔄</button>
-    <button class="btn secondary" id="leaveBtn" style="font-size:12px;padding:6px 12px">✕</button>
-  </header>
-  <div id="chat"></div>
-  <div id="typing" class="typing" style="display:none">Пользователь печатает...</div>
-  <div id="inputArea">
-    <button id="fileBtn" title="Отправить файл">📎</button>
-    <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
-    <button id="sendBtn" title="Отправить" disabled>➤</button>
-  </div>
-  <input type="file" id="fileInput" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-</div>
 
-<div id="nameModal">
-  <div class="content">
-    <h3>Ваше имя</h3>
-    <p style="color:var(--text-dim);margin-top:8px">Как вас называть в чате?</p>
-    <input type="text" id="nameInput" placeholder="Имя" maxlength="30">
-    <div class="row">
-      <button class="btn secondary" id="nameCancel">Отмена</button>
-      <button class="btn" id="nameSubmit">Начать</button>
+    <div id="chat-screen" class="hidden">
+      <div id="status-bar">
+        <span id="status-text"><span class="dot"></span>Не подключено</span>
+        <span id="typing-indicator"></span>
+        <button class="btn secondary" style="padding:4px 8px; font-size:12px; width:auto" onclick="RTC.restartIce()">🔄 Переподключить</button>
+        <button class="btn secondary" style="padding:4px 8px; font-size:12px; width:auto; margin-left:4px" onclick="UI.toggleLogs()">✕</button>
+      </div>
+      <div id="messages"></div>
+      <div id="input-bar">
+        <input type="file" id="file-input" style="display:none" accept="image/*,video/*,.pdf,.zip,.doc,.docx" onchange="Files.handleSelect(event)">
+        <button onclick="document.getElementById('file-input').click()">📎</button>
+        <input type="text" id="msg-input" placeholder="Сообщение..." autocomplete="off">
+        <button onclick="UI.sendMessage()">➤</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="logs"></div>
+  <div id="name-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Ваше имя</h3>
+      <p style="color:var(--text-dim); font-size:13px; margin-bottom:8px">Как вас называть в чате?</p>
+      <input type="text" id="username-input" maxlength="20" placeholder="Имя">
+      <div class="row">
+        <button class="btn secondary" onclick="UI.hideNameModal()">Отмена</button>
+        <button class="btn" onclick="UI.confirmName()">Начать</button>
+      </div>
+    </div>
+  </div>
 
-<script>
-// ==================== CONFIG ====================
-const PC_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ],
-  iceCandidatePoolSize: 10,
-  iceTransportPolicy: 'all',
-  bundlePolicy: 'max-bundle',
-  rtcpMuxPolicy: 'require'
-};
-const CHUNK_SIZE = 16 * 1024;
-const HEARTBEAT_INTERVAL = 3000;
-const HEARTBEAT_TIMEOUT = 10000;
-
-// ==================== STATE ====================
-let pc = null, dc = null;
-let userName = '';
-let currentChatId = null;
-let deviceId = localStorage.getItem('device_id') || crypto.randomUUID();
-localStorage.setItem('device_id', deviceId);
-let wakeLock = null;
-let heartbeatTimer = null;
-let lastPong = Date.now();
-let reconnectTimeout = null;
-let isReconnecting = false;
-const fileBuffers = {};
-
-// ==================== UTILS ====================
-const $ = id => document.getElementById(id);
-const log = (msg, type = 'info') => {
-  const logs = $('logs');
-  const entry = document.createElement('div');
-  entry.className = `entry ${type}`;
-  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-  logs.appendChild(entry);
-  logs.scrollTop = logs.scrollHeight;
-  console.log(`[${type}] ${msg}`);
-};
-const encodeData = (obj) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
-const decodeData = (str) => JSON.parse(decodeURIComponent(escape(atob(str))));
-const copyText = async (text) => {
-  try {
-    await navigator.clipboard.writeText(text);
-    log('📋 Скопировано!', 'success');
-    return true;
-  } catch { log('❌ Не удалось скопировать', 'error'); return false; }
-};
-const shareText = async (text) => {
-  if (navigator.share) {
-    try { await navigator.share({ text }); return true; } catch {}
-  }
-  return copyText(text);
-};
-const escapeHtml = (str) => {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-};
-const formatFileSize = (bytes) => {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/1024/1024).toFixed(1) + ' MB';
-};
-const getFileIcon = (mimeType) => {
-  if (mimeType?.startsWith('image/')) return '🖼️';
-  if (mimeType?.startsWith('video/')) return '🎬';
-  if (mimeType?.startsWith('audio/')) return '🎵';
-  if (mimeType === 'application/pdf') return '📄';
-  return '📎';
-};
-
-// ==================== INDEXED DB ====================
-const DB_NAME = 'firechat-db';
-async function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('messages')) {
-        db.createObjectStore('messages', { keyPath: 'id' });
+  <script>
+    // === IndexedDB ===
+    const DB = {
+      db: null,
+      async init() {
+        return new Promise((res, rej) => {
+          const req = indexedDB.open('firechat_history', 1);
+          req.onupgradeneeded = (e) => e.target.result.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+          req.onsuccess = (e) => { this.db = e.target.result; res(); };
+          req.onerror = (e) => rej(e);
+        });
+      },
+      async add(msg) {
+        const tx = this.db.transaction('messages', 'readwrite');
+        tx.objectStore('messages').add(msg);
+        return tx.complete;
+      },
+      async getAll() {
+        const tx = this.db.transaction('messages', 'readonly');
+        const store = tx.objectStore('messages');
+        return new Promise((res) => { const r = store.getAll(); r.onsuccess = () => res(r.result); });
+      },
+      clear() {
+        const tx = this.db.transaction('messages', 'readwrite');
+        tx.objectStore('messages').clear();
       }
     };
-  });
-}
-async function saveMessage(msg) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction('messages', 'readwrite');
-      tx.objectStore('messages').put(msg);
-      tx.oncomplete = () => resolve();
-    });
-  } catch (e) { log(`💾 Ошибка сохранения: ${e.message}`, 'error'); }
-}
-async function loadMessages(chatId) {
-  try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const tx = db.transaction('messages', 'readonly');
-      const request = tx.objectStore('messages').getAll();
-      request.onsuccess = () => {
-        const messages = request.result.filter(m => !chatId || m.chatId === chatId);
-        resolve(messages.sort((a, b) => a.timestamp - b.timestamp));
-      };
-    });
-  } catch { return []; }
-}
 
-// ==================== WAKE LOCK ====================
-async function requestWakeLock() {
-  if ('wakeLock' in navigator) {
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-      log('🔒 Wake Lock активирован');
-      wakeLock.addEventListener('release', () => log('🔓 Wake Lock отпущен'));
-    } catch (e) { log(`⚠️ Wake Lock: ${e.message}`, 'error'); }
-  }
-}
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release(); wakeLock = null; }
-}
-
-// ==================== WEBRTC ====================
-function createPC() {
-  const pc = new RTCPeerConnection(PC_CONFIG);
-  pc.oniceconnectionstatechange = () => {
-    const state = pc.iceConnectionState;
-    log(`🧊 ICE: ${state}`);
-    updateStatus(state);
-    if (state === 'disconnected' || state === 'failed') {
-      clearTimeout(reconnectTimeout);
-      reconnectTimeout = setTimeout(() => {
-        if (pc.iceConnectionState !== 'connected' && !isReconnecting) {
-          log('🔄 ICE Restart...');
-          handleICERestart();
-        }
-      }, 5000);
-    }
-    if (state === 'connected') {
-      clearTimeout(reconnectTimeout);
-      startHeartbeat();
-      $('reconnectBtn').style.display = 'none';
-    }
-  };
-  pc.onicecandidate = (e) => {
-    if (e.candidate) log(`🧊 Кандидат: ${e.candidate.candidate?.substring(0,40)}...`);
-  };
-  pc.onconnectionstatechange = () => {
-    log(`🔗 Connection: ${pc.connectionState}`);
-    if (pc.connectionState === 'failed') forceReconnect();
-  };
-  return pc;
-}
-
-async function handleICERestart() {
-  if (!pc || isReconnecting) return;
-  isReconnecting = true;
-  try {
-    const offer = await pc.createOffer({ iceRestart: true });
-    await pc.setLocalDescription(offer);
-    await new Promise((resolve) => {
-      if (pc.iceGatheringState === 'complete') resolve();
-      else {
-        const check = () => {
-          if (pc.iceGatheringState === 'complete') {
-            pc.removeEventListener('icegatheringstatechange', check);
-            resolve();
+    // === WebRTC & Core Logic ===
+    const RTC = {
+      pc: null, dc: null, channelName: 'firechat-data',
+      heartbeatTimer: null, isOnline: false, userName: 'User',
+      config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }], iceTransportPolicy: 'all' },
+      
+      init() {
+        this.pc = new RTCPeerConnection(this.config);
+        this.dc = this.pc.createDataChannel(this.channelName, { ordered: true });
+        this.setupDataChannel();
+        this.pc.onconnectionstatechange = () => this.updateState(this.pc.connectionState);
+        this.pc.oniceconnectionstatechange = () => {
+          if (this.pc.iceConnectionState === 'disconnected' || this.pc.iceConnectionState === 'failed') {
+            this.updateState('reconnecting');
+            setTimeout(() => this.restartIce(), 2000);
           }
         };
-        pc.addEventListener('icegatheringstatechange', check);
-        setTimeout(resolve, 8000);
-      }
-    });
-    const newOffer = encodeData({ type: 'reoffer', sdp: pc.localDescription.sdp, chatId: currentChatId, deviceId });
-    showReconnectModal(newOffer);
-  } catch (e) { log(`❌ ICE Restart: ${e.message}`, 'error'); isReconnecting = false; }
-}
+        this.startHeartbeat();
+      },
 
-function showReconnectModal(offerCode) {
-  const modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;z-index:200;padding:24px';
-  modal.innerHTML = `
-    <div style="background:var(--surface);padding:24px;border-radius:16px;max-width:400px;width:100%">
-      <h3>🔄 Смена сети</h3>
-      <p style="color:var(--text-dim);margin:12px 0">Отправьте этот код партнёру:</p>
-      <div class="code-box" id="reofferCode">${offerCode}</div>
-      <div class="row" style="margin-top:16px">
-        <button class="btn secondary" id="copyReoffer">📋</button>
-        <button class="btn secondary" id="shareReoffer">📤</button>
-      </div>
-      <p style="margin-top:16px;font-size:13px">Получите ответ и вставьте:</p>
-      <textarea id="reanswerInput" placeholder="Ответ..." rows="2" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);margin:8px 0"></textarea>
-      <button class="btn" id="applyReanswer" style="width:100%">✅ Применить</button>
-      <button class="btn danger secondary" id="closeReconnect" style="width:100%;margin-top:8px">Отмена</button>
-    </div>`;
-  document.body.appendChild(modal);
-  $('copyReoffer', modal).onclick = () => copyText(offerCode);
-  $('shareReoffer', modal).onclick = () => shareText(offerCode);
-  $('applyReanswer', modal).onclick = async () => {
-    const answer = $('reanswerInput', modal).value.trim();
-    if (!answer) return;
-    try {
-      const data = decodeData(answer);
-      if (data.type === 'reanswer' && data.sdp) {
-        await pc.setRemoteDescription({ type: 'answer', sdp: data.sdp });
-        log('✅ Соединение восстановлено!', 'success');
-        modal.remove(); isReconnecting = false;
-      }
-    } catch (e) { log(`❌ Ошибка: ${e.message}`, 'error'); }
-  };
-  $('closeReconnect', modal).onclick = () => { modal.remove(); isReconnecting = false; };
-}
+      setupDataChannel() {
+        this.dc.onopen = () => { this.isOnline = true; this.updateState('online'); UI.loadHistory(); };
+        this.dc.onmessage = (e) => Messages.receive(e.data);
+        this.dc.onbufferedamountlow = () => Files.resumeSend();
+        this.dc.onclose = () => { this.isOnline = false; this.updateState('offline'); };
+      },
 
-function updateStatus(state) {
-  const dot = $('statusDot'), info = $('connectionInfo');
-  dot.className = 'status';
-  if (state === 'connected' || state === 'completed') {
-    dot.classList.add('online'); info.textContent = 'Онлайн';
-  } else if (state === 'checking' || state === 'new') {
-    dot.classList.add('connecting'); info.textContent = 'Подключение...';
-  } else { info.textContent = 'Нет связи'; $('reconnectBtn').style.display = 'block'; }
-}
+      async createOffer() {
+        const offer = await this.pc.createOffer();
+        await this.pc.setLocalDescription(offer);
+        document.getElementById('offer-code').value = btoa(JSON.stringify(this.pc.localDescription));
+      },
 
-function startHeartbeat() {
-  stopHeartbeat(); lastPong = Date.now();
-  heartbeatTimer = setInterval(() => {
-    if (dc?.readyState === 'open') {
-      if (Date.now() - lastPong > HEARTBEAT_TIMEOUT) { log('💔 Heartbeat timeout', 'error'); forceReconnect(); return; }
-      dc.send(JSON.stringify({ type: 'ping', ts: Date.now() }));
-    }
-  }, HEARTBEAT_INTERVAL);
-}
-function stopHeartbeat() { if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; } }
-function forceReconnect() { log('🔄 Переподключение...'); cleanupConnection(); $('reconnectBtn').style.display = 'block'; }
+      async createAnswer() {
+        const offerStr = document.getElementById('offer-input').value.trim();
+        if (!offerStr) return alert('Вставьте код комнаты');
+        const offer = JSON.parse(atob(offerStr));
+        await this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await this.pc.createAnswer();
+        await this.pc.setLocalDescription(answer);
+        document.getElementById('answer-code').value = btoa(JSON.stringify(this.pc.localDescription));
+      },
 
-function cleanupConnection() {
-  stopHeartbeat(); releaseWakeLock();
-  if (dc) { dc.onmessage = dc.onopen = dc.onclose = null; try { dc.close(); } catch {} dc = null; }
-  if (pc) { pc.onicecandidate = pc.oniceconnectionstatechange = pc.onconnectionstatechange = null; try { pc.close(); } catch {} pc = null; }
-  clearTimeout(reconnectTimeout); isReconnecting = false;
-}
+      async connectPeer() {
+        const answerStr = document.getElementById('answer-input').value.trim();
+        if (!answerStr) return alert('Вставьте ответ друга');
+        const answer = JSON.parse(atob(answerStr));
+        await this.pc.setRemoteDescription(new RTCSessionDescription(answer));
+        document.getElementById('offer-code').value = '';
+        document.getElementById('answer-input').value = '';
+        UI.showChat();
+      },
 
-// ==================== DATA CHANNEL ====================
-function setupDataChannel(channel) {
-  dc = channel;
-  dc.onopen = () => { log('✅ DataChannel открыт', 'success'); startHeartbeat(); requestWakeLock(); loadHistory(); };
-  dc.onclose = () => { log('❌ DataChannel закрыт', 'error'); stopHeartbeat(); updateStatus('disconnected'); };
-  dc.onmessage = async (e) => {
-    try {
-      if (typeof e.data === 'string') {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'ping') { dc.send(JSON.stringify({ type: 'pong', ts: Date.now() })); return; }
-        if (msg.type === 'pong') { lastPong = Date.now(); return; }
-        if (msg.type === 'typing') { showTyping(msg.show); return; }
-        if (msg.type === 'file-meta') {
-          fileBuffers[msg.fileName] = { meta: msg, chunks: new Array(msg.totalChunks), received: 0 };
-          return;
+      async restartIce() {
+        if (!this.pc) return;
+        const config = this.pc.getConfiguration();
+        config.iceServers = this.config.iceServers;
+        this.pc.setConfiguration(config);
+        if (this.pc.signalingState !== 'closed') {
+          const offer = await this.pc.createOffer({ iceRestart: true });
+          await this.pc.setLocalDescription(offer);
+          document.getElementById('offer-code').value = btoa(JSON.stringify(this.pc.localDescription));
+          alert('🔄 Сгенерирован новый код. Отправьте его другу и вставьте обновлённый ответ.');
         }
-        await saveMessage({ id: msg.id || crypto.randomUUID(), chatId: currentChatId, sender: msg.sender, text: msg.text, timestamp: msg.timestamp || Date.now(), type: 'text' });
-        renderMessage(msg);
-        return;
+      },
+
+      updateState(state) {
+        const map = { connected: 'online', stable: 'online', new: 'Подключение...', checking: 'Подключение...', disconnected: 'Нет связи', failed: 'Нет связи', closed: 'Отключено', reconnecting: 'Переподключение...' };
+        const label = map[state] || state;
+        const dot = document.querySelector('#status-text .dot');
+        dot.className = state === 'online' ? 'dot online' : 'dot';
+        document.getElementById('status-text').innerHTML = `<span class="${dot.className}"></span>${label}`;
+        this.isOnline = (state === 'online' || state === 'stable');
+      },
+
+      startHeartbeat() {
+        clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = setInterval(() => {
+          if (this.dc?.readyState === 'open') {
+            try { this.dc.send(JSON.stringify({ type: 'ping', ts: Date.now() })); } catch {}
+          }
+        }, 3000);
       }
-      if (e.data instanceof ArrayBuffer) handleFileChunk(e.data);
-    } catch (err) { log(`❌ Ошибка: ${err.message}`, 'error'); }
-  };
-}
-
-function showTyping(show) {
-  const el = $('typing');
-  if (show) { el.style.display = 'block'; setTimeout(() => { if (el.style.display === 'block') el.style.display = 'none'; }, 3000); }
-  else el.style.display = 'none';
-}
-
-// ==================== FILE TRANSFER ====================
-async function sendFile(file) {
-  if (!dc || dc.readyState !== 'open') { log('❌ Нет соединения', 'error'); return; }
-  const fileName = file.name || `file_${Date.now()}`;
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  const meta = { type: 'file-meta', fileName, fileSize: file.size, mimeType: file.type || 'application/octet-stream', totalChunks, sender: userName, timestamp: Date.now() };
-  dc.send(JSON.stringify(meta));
-  for (let i = 0; i < totalChunks; i++) {
-    const start = i * CHUNK_SIZE, end = Math.min(start + CHUNK_SIZE, file.size);
-    const chunk = file.slice(start, end);
-    if (dc.bufferedAmount > CHUNK_SIZE * 2) {
-      await new Promise(resolve => {
-        const onLow = () => { dc.removeEventListener('bufferedamountlow', onLow); resolve(); };
-        dc.addEventListener('bufferedamountlow', onLow);
-      });
-    }
-    const header = new Uint32Array([i]);
-    const chunkData = await chunk.arrayBuffer();
-    const message = new Uint8Array(header.byteLength + chunkData.byteLength);
-    message.set(new Uint8Array(header.buffer), 0);
-    message.set(new Uint8Array(chunkData), header.byteLength);
-    dc.send(message);
-  }
-  log(`✅ Файл отправлен: ${fileName}`, 'success');
-  await saveMessage({ id: crypto.randomUUID(), chatId: currentChatId, sender: userName, fileName, fileSize: file.size, mimeType: file.type, timestamp: Date.now(), type: 'file', isOwn: true });
-  renderFileMessage(userName, fileName, file.size, file.type, true);
-}
-
-function handleFileChunk(data) {
-  const view = new DataView(data);
-  const chunkIndex = view.getUint32(0);
-  const chunkData = data.slice(4);
-  const entry = Object.values(fileBuffers).find(e => e.chunks[chunkIndex] === undefined && e.chunks.length > chunkIndex);
-  if (!entry) return;
-  entry.chunks[chunkIndex] = chunkData;
-  entry.received++;
-  if (entry.received === entry.meta.totalChunks) {
-    const blob = new Blob(entry.chunks, { type: entry.meta.mimeType });
-    const url = URL.createObjectURL(blob);
-    renderFileMessage(entry.meta.sender, entry.meta.fileName, entry.meta.fileSize, entry.meta.mimeType, false, url);
-    saveMessage({ id: crypto.randomUUID(), chatId: currentChatId, sender: entry.meta.sender, fileName: entry.meta.fileName, fileSize: entry.meta.fileSize, mimeType: entry.meta.mimeType, timestamp: entry.meta.timestamp, type: 'file', fileUrl: url });
-    delete fileBuffers[entry.meta.fileName];
-    log(`📥 Файл получен: ${entry.meta.fileName}`, 'success');
-  }
-}
-
-// ==================== UI RENDER ====================
-function renderMessage(msg) {
-  const chat = $('chat'), div = document.createElement('div');
-  const isOwn = msg.sender === userName;
-  div.className = `message ${isOwn ? 'sent' : 'received'}`;
-  const time = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `<div>${escapeHtml(msg.text || '')}</div><div class="meta"><span>${isOwn ? 'Вы' : msg.sender}</span><span>${time}</span></div>`;
-  chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-}
-
-function renderFileMessage(sender, fileName, fileSize, mimeType, isOwn, url = null) {
-  const chat = $('chat'), div = document.createElement('div');
-  div.className = `message ${isOwn ? 'sent' : 'received'}`;
-  const sizeStr = formatFileSize(fileSize), icon = getFileIcon(mimeType);
-  const time = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  let content = '';
-  if (mimeType?.startsWith('image/') && url) content = `<img src="${url}" alt="${escapeHtml(fileName)}" loading="lazy">`;
-  else content = `<div class="file-info"><span style="font-size:20px">${icon}</span><div><div style="font-weight:500">${escapeHtml(fileName)}</div><div style="font-size:12px;color:var(--text-dim)">${sizeStr}</div></div>${url ? `<a href="${url}" download="${escapeHtml(fileName)}" style="margin-left:auto">⬇️</a>` : ''}</div>`;
-  div.innerHTML = `${content}<div class="meta"><span>${isOwn ? 'Вы' : sender}</span><span>${time}</span></div>`;
-  chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-}
-
-async function loadHistory() {
-  const messages = await loadMessages(currentChatId);
-  $('chat').innerHTML = '';
-  messages.forEach(msg => {
-    if (msg.type === 'file') renderFileMessage(msg.sender, msg.fileName, msg.fileSize, msg.mimeType, msg.isOwn, msg.fileUrl);
-    else renderMessage(msg);
-  });
-}
-
-// ==================== SETUP FLOW ====================
-async function init() {
-  const nameModal = $('nameModal'), nameInput = $('nameInput');
-  const savedName = localStorage.getItem('firechat-name');
-  if (savedName) { userName = savedName; nameModal.classList.remove('active'); checkUrlParams(); }
-  else {
-    nameModal.classList.add('active'); nameInput.focus();
-    const submit = () => {
-      const name = nameInput.value.trim();
-      if (!name) { nameInput.focus(); return; }
-      userName = name; localStorage.setItem('firechat-name', userName);
-      nameModal.classList.remove('active'); checkUrlParams();
     };
-    $('nameSubmit').onclick = submit;
-    $('nameCancel').onclick = () => { if (nameInput.value.trim()) submit(); };
-    nameInput.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
-  }
-  $('createBtn').onclick = startCreate; $('joinBtn').onclick = startJoin;
-  $('cancelCreate').onclick = () => { $('createPanel').style.display = 'none'; };
-  $('cancelJoin').onclick = () => { $('joinPanel').style.display = 'none'; };
-  $('copyOffer').onclick = () => copyText($('offerCode').textContent);
-  $('shareOffer').onclick = () => shareText($('offerCode').textContent);
-  $('copyAnswer').onclick = () => copyText($('answerCode').textContent);
-  $('shareAnswer').onclick = () => shareText($('answerCode').textContent);
-  $('connectBtn').onclick = connectWithAnswer; $('generateAnswerBtn').onclick = generateAnswer;
-  $('sendBtn').onclick = sendMessage;
-  $('messageInput').oninput = () => {
-    $('sendBtn').disabled = !$('messageInput').value.trim();
-    if (dc?.readyState === 'open') {
-      dc.send(JSON.stringify({ type: 'typing', show: true }));
-      clearTimeout(window.typingTimer);
-      window.typingTimer = setTimeout(() => { if (dc?.readyState === 'open') dc.send(JSON.stringify({ type: 'typing', show: false })); }, 1000);
-    }
-  };
-  $('messageInput').onkeydown = (e) => { if (e.key === 'Enter' && !$('sendBtn').disabled) sendMessage(); };
-  $('fileBtn').onclick = () => $('fileInput').click();
-  $('fileInput').onchange = (e) => { const file = e.target.files[0]; if (file) sendFile(file); e.target.value = ''; };
-  $('leaveBtn').onclick = leaveChat; $('reconnectBtn').onclick = () => handleICERestart();
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && pc?.iceConnectionState !== 'connected') checkConnectionHealth();
-    requestWakeLock();
-  });
-  $('statusDot').addEventListener('touchstart', (e) => { e.preventDefault(); $('logs').classList.toggle('active'); }, { passive: true });
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(e => log(`SW: ${e.message}`, 'error'));
-}
 
-function checkUrlParams() {
-  const params = new URLSearchParams(window.location.search);
-  const room = params.get('room');
-  if (room) { $('offerInput').value = room; startJoin(); }
-}
-
-function startCreate() {
-  $('setupScreen').classList.remove('active'); $('chatScreen').classList.add('active'); $('createPanel').style.display = 'block';
-  generateOffer();
-}
-
-async function generateOffer() {
-  pc = createPC();
-  dc = pc.createDataChannel('chat', { ordered: true });
-  setupDataChannel(dc);
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  await new Promise(resolve => {
-    if (pc.iceGatheringState === 'complete') resolve();
-    else {
-      const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); } };
-      pc.addEventListener('icegatheringstatechange', check);
-      setTimeout(resolve, 5000);
-    }
-  });
-  currentChatId = crypto.randomUUID().slice(0, 8);
-  const code = encodeData({ type: 'offer', sdp: pc.localDescription.sdp, chatId: currentChatId, deviceId, timestamp: Date.now() });
-  $('offerCode').textContent = code; log('📤 Offer готов');
-}
-
-function startJoin() {
-  $('setupScreen').classList.remove('active'); $('chatScreen').classList.add('active'); $('joinPanel').style.display = 'block';
-}
-
-async function generateAnswer() {
-  const offerStr = $('offerInput').value.trim();
-  if (!offerStr) { alert('Вставьте код комнаты'); return; }
-  try {
-    const offerData = decodeData(offerStr);
-    if (offerData.type !== 'offer') throw new Error('Неверный формат');
-    pc = createPC();
-    pc.ondatachannel = (e) => { dc = e.channel; setupDataChannel(dc); };
-    await pc.setRemoteDescription({ type: 'offer', sdp: offerData.sdp });
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await new Promise(resolve => {
-      if (pc.iceGatheringState === 'complete') resolve();
-      else {
-        const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); } };
-        pc.addEventListener('icegatheringstatechange', check);
-        setTimeout(resolve, 5000);
+    // === Messages & Files ===
+    const Messages = {
+      async send(text) {
+        const msg = { id: Date.now(), type: 'text', author: RTC.userName, text, ts: new Date().toISOString() };
+        RTC.dc.send(JSON.stringify(msg));
+        await DB.add(msg);
+        this.render(msg, true);
+        document.getElementById('msg-input').value = '';
+      },
+      receive(raw) {
+        const msg = JSON.parse(raw);
+        if (msg.type === 'ping') return;
+        if (msg.type === 'typing') return UI.showTyping(msg.author);
+        if (msg.type === 'file-start') return Files.startReceive(msg);
+        if (msg.type === 'file-chunk') return Files.receiveChunk(msg);
+        if (msg.type === 'file-end') return Files.finishReceive(msg);
+        DB.add(msg).then(() => this.render(msg, false));
+      },
+      render(msg, isSent) {
+        const el = document.createElement('div');
+        el.className = `msg ${isSent ? 'sent' : 'received'}`;
+        el.innerHTML = msg.text.replace(/\n/g, '<br>');
+        document.getElementById('messages').appendChild(el);
+        el.scrollIntoView({ behavior: 'smooth' });
       }
-    });
-    currentChatId = offerData.chatId;
-    const answerCode = encodeData({ type: 'answer', sdp: pc.localDescription.sdp, chatId: currentChatId, deviceId });
-    $('answerCode').textContent = answerCode; $('answerPanel').style.display = 'block';
-    log('🔗 Answer готов');
-  } catch (e) { log(`❌ Ошибка: ${e.message}`, 'error'); alert('Неверный код'); }
-}
+    };
 
-async function connectWithAnswer() {
-  const answerStr = $('answerInput').value.trim();
-  if (!answerStr) { alert('Вставьте ответ'); return; }
-  try {
-    const answerData = decodeData(answerStr);
-    if (answerData.type !== 'answer') throw new Error('Неверный формат');
-    await pc.setRemoteDescription({ type: 'answer', sdp: answerData.sdp });
-    log('✅ Подключено!', 'success');
-    $('createPanel').style.display = 'none'; updateStatus(pc.iceConnectionState);
-  } catch (e) { log(`❌ Ошибка: ${e.message}`, 'error'); }
-}
+    const Files = {
+      currentFile: null, chunks: [], expectedSize: 0, buffer: [],
+      async handleSelect(e) {
+        const file = e.target.files[0]; if (!file) return;
+        this.currentFile = file;
+        this.expectedSize = file.size;
+        this.chunks = [];
+        RTC.dc.send(JSON.stringify({ type: 'file-start', name: file.name, size: file.size, author: RTC.userName }));
+        const reader = new FileReader();
+        const offset = { value: 0 };
+        const readChunk = () => {
+          if (offset.value >= file.size) {
+            RTC.dc.send(JSON.stringify({ type: 'file-end', name: file.name, author: RTC.userName }));
+            return;
+          }
+          const slice = file.slice(offset.value, offset.value + 16384);
+          reader.readAsDataURL(slice);
+          reader.onload = () => {
+            const data = { type: 'file-chunk', chunk: reader.result, seq: this.chunks.length, name: file.name };
+            RTC.dc.send(JSON.stringify(data));
+            this.chunks.push(data);
+            offset.value += 16384;
+            if (RTC.dc.bufferedAmount > 65536) RTC.dc.onbufferedamountlow = () => readChunk();
+            else readChunk();
+          };
+        };
+        readChunk();
+      },
+      startReceive(msg) { this.buffer = []; this.expectedSize = msg.size; this.currentFile = msg.name; },
+      receiveChunk(msg) { this.buffer.push(msg.chunk); },
+      finishReceive(msg) {
+        const blob = new Blob(this.buffer, { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const msgObj = { id: Date.now(), type: 'file', author: msg.author, name: msg.name, url, ts: new Date().toISOString() };
+        DB.add(msgObj);
+        const el = document.createElement('div'); el.className = 'msg received';
+        el.innerHTML = `<b>📎 ${msg.name}</b>${msg.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? `<img src="${url}">` : ''}`;
+        document.getElementById('messages').appendChild(el); el.scrollIntoView({ behavior: 'smooth' });
+        this.buffer = [];
+      },
+      resumeSend() {}
+    };
 
-async function sendMessage() {
-  const input = $('messageInput'), text = input.value.trim();
-  if (!text || !dc || dc.readyState !== 'open') return;
-  const msg = { id: crypto.randomUUID(), type: 'text', sender: userName, text, timestamp: Date.now() };
-  dc.send(JSON.stringify(msg));
-  await saveMessage({ ...msg, chatId: currentChatId });
-  renderMessage(msg); input.value = ''; $('sendBtn').disabled = true;
-}
+    // === UI ===
+    const UI = {
+      showCreator() { RTC.init(); RTC.createOffer(); document.getElementById('creator-flow').classList.remove('hidden'); document.getElementById('setup-screen').classList.add('hidden'); },
+      showJoiner() { RTC.init(); document.getElementById('joiner-flow').classList.remove('hidden'); document.getElementById('setup-screen').classList.add('hidden'); },
+      reset() { location.reload(); },
+      copyCode(id) { const t = document.getElementById(id); t.select(); document.execCommand('copy'); },
+      shareCode(id) { if (navigator.share) navigator.share({ text: document.getElementById(id).value }); },
+      async loadHistory() {
+        const msgs = await DB.getAll();
+        msgs.forEach(m => Messages.render(m, m.author === RTC.userName));
+      },
+      sendMessage() {
+        const t = document.getElementById('msg-input').value.trim();
+        if (t && RTC.isOnline) Messages.send(t);
+      },
+      showTyping(author) {
+        const el = document.getElementById('typing-indicator');
+        el.textContent = `${author} печатает...`;
+        setTimeout(() => el.textContent = '', 2000);
+      },
+      hideNameModal() { document.getElementById('name-modal').classList.add('hidden'); },
+      confirmName() {
+        const n = document.getElementById('username-input').value.trim() || 'Гость';
+        RTC.userName = n;
+        this.hideNameModal();
+        this.showChat();
+      },
+      showChat() {
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('creator-flow').classList.add('hidden');
+        document.getElementById('joiner-flow').classList.add('hidden');
+        document.getElementById('chat-screen').classList.remove('hidden');
+      },
+      toggleLogs() { console.clear(); console.log('🔍 Логи WebRTC:', RTC.pc.getStats()); }
+    };
 
-function checkConnectionHealth() {
-  if (!pc) return;
-  pc.getStats().then(stats => {
-    let bytesReceived = 0, bytesSent = 0;
-    stats.forEach(report => { if (report.type === 'transport') { bytesReceived = report.bytesReceived; bytesSent = report.bytesSent; } });
-  });
-}
-
-function leaveChat() {
-  if (confirm('Завершить чат?')) {
-    cleanupConnection(); currentChatId = null;
-    $('chatScreen').classList.remove('active'); $('setupScreen').classList.add('active');
-    $('createPanel').style.display = 'none'; $('joinPanel').style.display = 'none'; $('chat').innerHTML = '';
-  }
-}
-
-document.addEventListener('DOMContentLoaded', init);
-</script>
+    // === Init & Mobile Handling ===
+    (async () => {
+      await DB.init();
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+      if ('WakeLock' in navigator) {
+        let lock = null;
+        const reqLock = async () => { try { lock = await navigator.wakeLock.request('screen'); } catch {} };
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reqLock(); else lock?.release(); });
+        reqLock();
+      }
+      document.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); UI.sendMessage(); } });
+      if (!localStorage.getItem('fc_name')) {
+        document.getElementById('name-modal').classList.remove('hidden');
+        localStorage.setItem('fc_name', '1');
+      } else {
+        RTC.userName = 'Пользователь';
+        UI.showChat();
+      }
+    })();
+  </script>
 </body>
 </html>
